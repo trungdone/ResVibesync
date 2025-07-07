@@ -23,4 +23,3 @@ export async function fetchAlbumsByArtist(artist_id) {
       return albums.filter(album => album.artist_id === artist_id);
     });
 }
-
