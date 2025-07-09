@@ -22,4 +22,6 @@ export async function fetchAlbumsByArtist(artist_id) {
       const albums = Array.isArray(data.albums) ? data.albums : (Array.isArray(data) ? data : []);
       return albums.filter(album => album.artist_id === artist_id);
     });
+
 }
+

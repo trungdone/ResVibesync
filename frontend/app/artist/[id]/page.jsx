@@ -267,7 +267,7 @@ export default function ArtistDetailPage() {
                   <MoreHorizontal size={20} /> More
                 </button>
                 {showMenu && (
-                  <div className="absolute left-auto right-0 mt-2 w-56 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg shadow-lg py-2 z-10 border border-gray-700 origin-right">
+                  <div className="absolute -auto right-0 mt-2 w-56 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg shadow-lg py-2 z-10 border border-gray-700 origin-right">
                     <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2">
                       <Share2 size={18} /> Share
                     </button>
