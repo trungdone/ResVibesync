@@ -91,3 +91,14 @@ def toggle_like_song(song_id: str, current_user: dict = Depends(get_current_user
     liked_songs = UserService.toggle_like_song(current_user["id"], song_id)
     return {"likedSongs": liked_songs}
 
+
+
+@router.get("/me/following")
+async def get_followed_artists(current_user: dict = Depends(get_current_user)):
+    from services.follow_service import FollowService
+
+    follow_service = FollowService()
+    artists = follow_service.get_followed_artists(current_user["id"])  # ✅ Đã sửa "_id" thành "id"
+
+    return {"following": artists}
+

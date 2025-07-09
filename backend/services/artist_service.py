@@ -121,3 +121,41 @@ class ArtistService:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Không thể xóa nghệ sĩ: {str(e)}")
 
+# ✅ services/artist_service.py (thêm follow/unfollow)
+    def follow_artist(self, artist_id: str, user_id: str) -> bool:
+        try:
+            artist = self.artist_repo.find_by_id(ObjectId(artist_id))
+            if not artist:
+                raise HTTPException(status_code=404, detail="Artist not found")
+
+            if user_id in artist.get("follower_ids", []):
+                raise HTTPException(status_code=400, detail="Already following")
+
+            update_data = {
+                "$addToSet": {"follower_ids": user_id},
+                "$inc": {"followers": 1},
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+            self.artist_repo.update_fields(ObjectId(artist_id), update_data)
+            return True
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to follow artist: {str(e)}")
+
+    def unfollow_artist(self, artist_id: str, user_id: str) -> bool:
+        try:
+            artist = self.artist_repo.find_by_id(ObjectId(artist_id))
+            if not artist:
+                raise HTTPException(status_code=404, detail="Artist not found")
+
+            if user_id not in artist.get("follower_ids", []):
+                raise HTTPException(status_code=400, detail="Not following")
+
+            update_data = {
+                "$pull": {"follower_ids": user_id},
+                "$inc": {"followers": -1},
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+            self.artist_repo.update_fields(ObjectId(artist_id), update_data)
+            return True
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to unfollow artist: {str(e)}")

@@ -1,14 +1,16 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useMusic } from "@/context/music-context";
 import { Play, Shuffle, MoreHorizontal, Disc, Heart, Share2, Plus, Eye, User } from "lucide-react";
-import { fetchArtistById, fetchSuggestedArtists } from "@/lib/api/artists";
+import { fetchArtistById, fetchSuggestedArtists, followArtist, unfollowArtist } from "@/lib/api/artists";
 import { fetchSongsByArtist, fetchTopSongs } from "@/lib/api/songs";
 import { fetchAlbumsByArtist } from "@/lib/api/albums";
 import SongList from "@/components/songs/song-list";
+import { useParams } from "next/navigation";
+
 
 const RelatedArtistCard = ({ artist }) => (
   <Link href={`/artist/${artist._id || artist.id || "default"}?from=youmaylike`}>
@@ -35,8 +37,9 @@ const AchievementList = ({ achievements }) => (
   </ul>
 );
 
-export default function ArtistDetailPage({ params }) {
-  const { id } = use(params);
+export default function ArtistDetailPage() {
+  const { id: artistId } = useParams();
+
   const [artist, setArtist] = useState(null);
   const [suggestedArtists, setSuggestedArtists] = useState([]);
   const [artistSongs, setArtistSongs] = useState([]);
@@ -54,76 +57,125 @@ export default function ArtistDetailPage({ params }) {
   const [navigationLevel, setNavigationLevel] = useState(1);
   const [showAllSongs, setShowAllSongs] = useState(false);
   const [showAllTopSongs, setShowAllTopSongs] = useState(false);
+  
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        const artistId = id ? id.toString() : null;
-        if (!artistId) throw new Error("Artist ID is missing or invalid");
+ useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!artistId || !token) {
+    console.warn("⏳ Chưa sẵn sàng để fetch: artistId hoặc token chưa có");
+    return;
+  }
 
-        console.log(`Fetching artist with ID: ${artistId}`);
-        const artistData = await fetchArtistById(artistId);
-        console.log("Artist data (full):", artistData);
-        if (!artistData) throw new Error("Artist not found");
+  async function loadData() {
+    try {
+      setLoading(true);
 
-        let suggestedArtistsData = [];
-        let artistSongsData = [];
-        let artistAlbumsData = [];
-        let topSongsData = [];
-        try {
-          console.log("Fetching suggested artists...");
-          suggestedArtistsData = await fetchSuggestedArtists(artistId);
-          console.log("Suggested artists data (full):", suggestedArtistsData);
-          if (!Array.isArray(suggestedArtistsData)) suggestedArtistsData = [];
-          suggestedArtistsData = suggestedArtistsData.filter(a => a._id !== artistId && a.id !== artistId);
-          console.log("Fetching artist songs...");
-          artistSongsData = await fetchSongsByArtist(artistId);
-          console.log("Artist songs data:", artistSongsData);
-          console.log("Fetching artist albums...");
-          artistAlbumsData = await fetchAlbumsByArtist(artistId);
-          console.log("Artist albums data (full):", artistAlbumsData);
-          artistAlbumsData.forEach((album, index) => {
-            console.log(`Album ${index + 1} coverArt:`, album.coverArt);
-          });
-          console.log("Fetching top songs...");
-          topSongsData = await fetchTopSongs();
-          console.log("Top songs data:", topSongsData);
-        } catch (fetchError) {
-          console.error("Failed to fetch data:", fetchError);
-          suggestedArtistsData = [];
-          artistSongsData = [];
-          artistAlbumsData = [];
-          topSongsData = [];
-        }
+      console.log(`🔍 Fetching artist with ID: ${artistId}`);
+      const artistData = await fetchArtistById(artistId, token);
+      if (!artistData) throw new Error("Artist not found");
 
-        setArtist(artistData);
-        setSuggestedArtists(suggestedArtistsData);
-        setArtistSongs(artistSongsData);
-        setArtistAlbums(artistAlbumsData);
-        setTopSongs(topSongsData);
-        setAchievements(artistData.achievements || []);
-      } catch (err) {
-        console.error("Error loading data:", err);
-        setError(err.message || "Failed to load artist data");
-      } finally {
-        setLoading(false);
-      }
+      const suggested = await fetchSuggestedArtists(artistId);
+      const songs = await fetchSongsByArtist(artistId);
+      const albums = await fetchAlbumsByArtist(artistId);
+      const top = await fetchTopSongs();
+
+      setArtist(artistData);
+      setIsFollowing(artistData.isFollowing || false);
+
+      setSuggestedArtists(suggested.filter(a => a._id !== artistId && a.id !== artistId));
+      setArtistSongs(songs);
+      setArtistAlbums(albums);
+      setTopSongs(top);
+      setAchievements(artistData.achievements || []);
+      setIsFollowing(artistData?.isFollowing || false);
+    } catch (err) {
+      console.error("❌ Error loading data:", err);
+      setError(err.message || "Failed to load artist data");
+    } finally {
+      setLoading(false);
     }
-    loadData();
-  }, [id]);
+  }
+
+  loadData();
+}, [artistId]);
+
 
   useEffect(() => {
-    if (id) {
+    if (artistId) {
       const searchParams = new URLSearchParams(window.location.search);
       if (!previousId || searchParams.get("from") !== "youmaylike") {
         setNavigationLevel(1);
       } else {
         setNavigationLevel(2);
       }
-      setPreviousId(id);
+      setPreviousId(artistId);
     }
-  }, [id, previousId]);
+  }, [artistId, previousId]);
+
+
+  // ✅ Toggle follow / unfollow nghệ sĩ
+ const toggleFollow = async () => {
+  const artistId = artist?.id;
+  console.log("👤 artist object:", artist);
+  console.log("🆔 artistId resolved:", artistId);
+
+  if (!artistId) {
+    console.warn("⚠️ Artist ID is missing");
+    return;
+  }
+
+  try {
+    console.log("🔁 toggleFollow called for:", artistId);
+    console.log("📌 Trạng thái trước: isFollowing =", isFollowing);
+
+    if (isFollowing) {
+      console.log("🗑️ Gửi yêu cầu UNFOLLOW...");
+      await unfollowArtist(artistId);
+      setIsFollowing(false);
+      setArtist((prev) => {
+        const updated = { ...prev, followerCount: Math.max((prev.followerCount || 1) - 1, 0) }; // 🔧 sửa ở đây
+        console.log("🔽 followerCount sau unfollow:", updated.followerCount);
+        return updated;
+      });
+    } else {
+      console.log("➕ Gửi yêu cầu FOLLOW...");
+      await followArtist(artistId);
+      setIsFollowing(true);
+      setArtist((prev) => {
+        const updated = { ...prev, followerCount: (prev.followerCount || 0) + 1 }; // 🔧 sửa ở đây
+        console.log("🔼 followerCount sau follow:", updated.followerCount);
+        return updated;
+      });
+    }
+
+    console.log("📌 Trạng thái sau: isFollowing =", !isFollowing);
+  } catch (err) {
+    console.error("❌ Lỗi khi follow/unfollow:", err);
+  }
+};
+
+
+
+
+  const handlePlayAll = () => {
+    if (artistSongs.length > 0) {
+      try {
+        playSong(artistSongs[0]);
+        setIsPlaying(true);
+        setTimeout(() => setIsPlaying(false), 2000);
+      } catch (err) {
+        console.error("❌ Play song error:", err);
+      }
+    }
+  };
+
+  const toggleShuffle = () => setIsShuffling(prev => !prev);
+  const toggleMenu = () => setShowMenu(prev => !prev);
+  const toggleShowSongs = () => setShowAllSongs(prev => !prev);
+  const toggleShowTopSongs = () => setShowAllTopSongs(prev => !prev);
+
+  const visibleSongs = showAllSongs ? artistSongs : artistSongs.slice(0, 5);
+  const visibleTopSongs = showAllTopSongs ? topSongs : topSongs.slice(0, 5);
 
   if (loading) {
     return (
@@ -141,42 +193,7 @@ export default function ArtistDetailPage({ params }) {
     );
   }
 
-  const handlePlayAll = () => {
-    if (artistSongs.length > 0) {
-      try {
-        playSong(artistSongs[0]);
-        setIsPlaying(true);
-        setTimeout(() => setIsPlaying(false), 2000);
-      } catch (err) {
-        console.error("Play song error:", err);
-      }
-    }
-  };
-
-  const toggleShuffle = () => {
-    setIsShuffling((prev) => !prev);
-  };
-
-  const toggleFollow = () => {
-    setIsFollowing((prev) => !prev);
-  };
-
-  const toggleMenu = () => {
-    setShowMenu((prev) => !prev);
-  };
-
-  const toggleShowSongs = () => {
-    setShowAllSongs(!showAllSongs);
-  };
-
-  const toggleShowTopSongs = () => {
-    setShowAllTopSongs(!showAllTopSongs);
-  };
-
-  const visibleSongs = showAllSongs ? artistSongs : artistSongs.slice(0, 5);
-  const visibleTopSongs = showAllTopSongs ? topSongs : topSongs.slice(0, 5);
-
-  return (
+   return (
     <div className="bg-gray-900 min-h-screen text-white">
       <div
         className="relative h-96 bg-gradient-to-b from-purple-800/50 to-gray-900 flex flex-col justify-end p-6"
@@ -201,6 +218,10 @@ export default function ArtistDetailPage({ params }) {
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-4xl md:text-5xl font-bold mb-3 drop-shadow-lg">{artist.name}</h1>
             <p className="text-gray-300 text-base mb-4 max-w-2xl">{artist.bio || "No bio available"}</p>
+            <p className="text-gray-400 text-sm mb-4">
+               Followers: <span className="font-semibold text-white">{artist.followerCount?.toLocaleString() || 0}</span>
+            </p>
+
             <div className="flex flex-col md:flex-row gap-4 items-center">
               <button
                 className={`bg-green-500 text-black font-semibold px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
@@ -219,6 +240,7 @@ export default function ArtistDetailPage({ params }) {
               >
                 <Shuffle size={20} /> Shuffle
               </button>
+              {/* follow */}
               <button
                 className={`bg-gray-800 text-gray-300 px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
                   isFollowing ? "bg-green-600 hover:bg-green-400" : "hover:bg-gray-700"

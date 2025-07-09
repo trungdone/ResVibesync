@@ -43,6 +43,7 @@ class ArtistInDB(ArtistBase):
     follower_ids: Optional[List[str]] = []
     created_at: datetime
     updated_at: Optional[datetime] = None
+    isFollowing: Optional[bool] = False  # ✅ THÊM DÒNG NÀY
 
     class Config:
         arbitrary_types_allowed = True

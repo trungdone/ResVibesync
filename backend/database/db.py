@@ -24,6 +24,9 @@ playlists_collection = db["playlists"]
 artists_collection = db["artists"]
 albums_collection = db["albums"]
 chat_history_collection = db["chat_history"]
+follows_collection = db["follows"]
+likes_collection = db["likes"]
+
 
 # Password hash setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -23,6 +23,8 @@ from routes.admin_routes.song_admin_routes import router as admin_song_router
 from routes.admin_routes.admin_artist_routes import router as admin_artist_router
 from routes.admin_routes.admin_album_routes import router as admin_album_router
 
+
+
 # Khởi tạo FastAPI
 app = FastAPI(title="VibeSync API")
 
@@ -47,6 +49,8 @@ app.include_router(artist_routes.router, prefix="/api")
 app.include_router(chat_routes.router)
 app.include_router(recomment_routes.router, prefix="/api")
 app.include_router(history_songs_routes.router)
+
+
 
 # Đăng ký các router cho admin
 app.include_router(admin_song_router, prefix="/api")
