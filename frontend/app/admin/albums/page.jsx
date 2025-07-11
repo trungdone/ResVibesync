@@ -140,6 +140,7 @@ const handleFormSubmit = async (_albumData, result) => {
           onCancel={() => {
             setShowForm(false);
             setSelectedAlbum(null);
+            
           }}
         />
       ) : showView ? (

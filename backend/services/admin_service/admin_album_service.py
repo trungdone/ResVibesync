@@ -85,34 +85,53 @@ class AdminAlbumService:
             raise ValueError(f"Failed to insert album: {str(e)}")
 
     def update_album(self, album_id: str, data: AlbumUpdate) -> bool:
-        # Lấy album hiện tại để kiểm tra title
         current_album = self.repo.find_by_id(album_id)
         if not current_album:
             raise ValueError(f"Album with id '{album_id}' not found")
 
         update_data = data.dict(exclude_unset=True)
+        print(f"[AlbumService] update_album {album_id} received update_data: {update_data}")
+
+    # validate artist_id nếu có
+        if "artist_id" in update_data:
+            from database.db import artists_collection
+            if not artists_collection.find_one({"_id": ObjectId(update_data["artist_id"])}):
+                raise ValueError(f"Artist with id {update_data['artist_id']} not found")
+            print(f"[AlbumService] artist_id validated OK: {update_data['artist_id']}")
+
+    # validate title trùng
         if "title" in update_data:
             new_title = update_data.pop("title").strip()
-            # Kiểm tra trùng lặp title, loại trừ album hiện tại
             if new_title != current_album.get("title"):
-                existing_albums = self.repo.find_by_title(new_title)
-                existing_albums = [album for album in existing_albums if str(album["_id"]) != album_id]
-                if existing_albums:
+                existing = self.repo.find_by_title(new_title)
+                existing = [al for al in existing if str(al["_id"]) != album_id]
+                if existing:
                     raise ValueError(f"Album with title '{new_title}' already exists")
             update_data["title"] = new_title
 
+    # cover_art
         if "cover_art" in update_data:
-            update_data["cover_image"] = str(update_data.pop("cover_art")) if update_data["cover_art"] else None
+           update_data["cover_image"] = str(update_data.pop("cover_art")) if update_data["cover_art"] else None
+
+    # release_year
         if "release_year" in update_data:
-            update_data["release_date"] = datetime(update_data.pop("release_year"), 1, 1)
+           update_data["release_date"] = datetime(update_data.pop("release_year"), 1, 1)
+
+    # genres
         if "genres" in update_data:
-            update_data["genres"] = update_data["genres"] or []
+           update_data["genres"] = update_data["genres"] or []
+
         update_data["updated_at"] = datetime.utcnow()
+
+        print(f"[AlbumService] update_album final update_data: {update_data}")
 
         result = self.repo.update(album_id, update_data)
         if not result:
             raise ValueError(f"Failed to update album with id '{album_id}'")
+
+        print(f"[AlbumService] album {album_id} updated successfully")
         return result
+
 
     def delete_album(self, album_id: str) -> bool:
         result = self.repo.delete(album_id)

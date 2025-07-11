@@ -5,7 +5,7 @@ import { fetchSongs } from "@/lib/api";
 export default async function NewReleases() {
   let newReleases = [];
   try {
-    newReleases = await fetchSongs({ sort: "releaseYear", limit: 8 });
+    newReleases = await fetchSongs({ sort: "releaseYear", limit: 19 });
     // Kiểm tra và trích xuất mảng songs nếu newReleases là object
     newReleases = Array.isArray(newReleases) ? newReleases : newReleases?.songs || [];
   } catch (error) {

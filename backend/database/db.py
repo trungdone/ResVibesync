@@ -16,7 +16,10 @@ artists_collection = db["artists"]
 users_collection = db["users"]
 song_history_collection = db["song_history"]
 albums_collection = db["albums"]
-
+artist_requests_collection = db["artist_requests"]
+notifications_collection =db["notifications"]
+follows_collection = db["follows"]
+likes_collection = db["likes"]
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

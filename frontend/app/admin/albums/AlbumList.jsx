@@ -54,14 +54,23 @@ export default function AlbumList({ albums, onAdd, onEdit, onDelete, onView }) {
   }, [albums, toast]);
 
   const filteredAlbums = albums.filter((album) =>
-    [album.title, artists[album.artist_id] || "N/A", album.genre].some(
-      (field) => typeof field === "string" && field.toLowerCase().includes(search.toLowerCase())
-    )
+    [
+      album.title,
+      artists[album.artist_id] || "N/A",
+      album.genre || "",
+    ].some((field) => typeof field === "string" && field.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const totalPages = Math.ceil(filteredAlbums.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredAlbums.length / itemsPerPage));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [filteredAlbums, totalPages, currentPage]);
+
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedAlbums = (filteredAlbums.length > 0 ? filteredAlbums : albums).slice(startIndex, startIndex + itemsPerPage);
+  const paginatedAlbums = filteredAlbums.slice(startIndex, startIndex + itemsPerPage);
 
   console.log("Albums:", albums, "Filtered albums:", filteredAlbums, "Paginated albums:", paginatedAlbums);
 

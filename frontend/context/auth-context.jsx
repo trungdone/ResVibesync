@@ -4,8 +4,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-
-
 const AuthContext = createContext({
   user: null,
   isAuthenticated: false,
@@ -42,6 +40,12 @@ export function AuthProvider({ children }) {
         const userData = JSON.parse(text);
         setUser(userData);
         setIsAuthenticated(true);
+          // check role change
+  const previousRole = localStorage.getItem("previousRole")
+  if (previousRole && previousRole !== userData.role) {
+    localStorage.setItem("roleChanged", `Role changed from ${previousRole} to ${userData.role}`)
+  }
+  localStorage.setItem("previousRole", userData.role)
         return userData;
       } else {
         throw new Error("Invalid or expired token");
@@ -52,6 +56,7 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
+    
   };
 
   const signIn = async (email, password) => {
@@ -73,7 +78,36 @@ export function AuthProvider({ children }) {
         }
         setUser(userData);
         setIsAuthenticated(true);
-        router.push(userData.role === "admin" ? "/admin/dashboard" : "/profile");
+
+      localStorage.setItem("welcomeNotification", `Welcome back, ${userData.name}! You are logged in as ${userData.role}.`);
+
+      router.push(
+  userData.role === "admin"
+    ? "/admin/dashboard"
+    : userData.role === "artist"
+      ? "/role_artist/dashboard"
+      : "/profile"
+);
+
+        // Push welcome notification to server
+  try {
+  const res = await fetch("http://localhost:8000/api/notifications", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${data.access_token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      user_id: userData.id,
+      title: "Welcome",
+      message: `Welcome back, ${userData.name}! You are logged in as ${userData.role}.`,
+      type: "login"
+    })
+  });
+  if (!res.ok) console.error("Notify welcome failed");
+} catch (err) {
+  console.error("Notify welcome failed", err);
+}
       } else {
         throw new Error(data.detail || "Invalid credentials");
       }

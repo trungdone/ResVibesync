@@ -1,124 +1,163 @@
 "use client";
 
-   import React, { useEffect, useState } from "react";
-   import { useAuth } from "@/context/auth-context";
-   import { useToast } from "@/hooks/use-toast";
-   import { fetchSongs, createSong, updateSong, deleteSong } from "./songApi";
-   import { SongList } from "./SongList";
-   import { SongForm } from "./SongForm";
-   import { SongView } from "./SongView";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchSongs,deleteSong } from "./songApi";
+import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import SongList from "./SongList";
+import SongForm from "./SongForm";
+import SongView from "./SongView";
 
-   export default function SongsPage() {
-     const { user } = useAuth();
-     const { toast } = useToast();
-     const [songs, setSongs] = useState([]);
-     const [selectedSong, setSelectedSong] = useState(null);
-     const [showForm, setShowForm] = useState(false);
-     const [showView, setShowView] = useState(false);
+const Alert = ({ type, message, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
 
-     useEffect(() => {
-       loadSongs();
-     }, []);
+  const variants = {
+    success: "bg-green-500 text-white",
+    error: "bg-red-500 text-white",
+  };
 
-     const loadSongs = async () => {
-       try {
-         const data = await fetchSongs();
-         console.log("Songs data:", data);
-         setSongs(Array.isArray(data) ? data : data?.songs || []);
-       } catch (err) {
-         toast({
-           variant: "destructive",
-           title: "Error",
-           description: "Failed to load songs",
-         });
-       }
-     };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-[1000] flex items-center justify-between p-4 rounded-lg shadow-lg ${variants[type]} max-w-md w-full`}
+    >
+      <span>{message}</span>
+      <button
+        onClick={onClose}
+        className="ml-4 text-white hover:text-gray-200 focus:outline-none"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </motion.div>
+  );
+};
 
-     const handleAdd = () => {
-       setSelectedSong(null);
-       setShowForm(true);
-       setShowView(false);
-     };
+export default function SongPage() {
+  const [songs, setSongs] = useState([]);
+  const [selectedSong, setSelectedSong] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [showView, setShowView] = useState(false);
+  const [alert, setAlert] = useState(null);
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
-     const handleEdit = (song) => {
-       setSelectedSong(song);
-       setShowForm(true);
-       setShowView(false);
-     };
+  useEffect(() => {
+    loadSongs();
+  }, []);
 
-     const handleView = (song) => {
-       setSelectedSong(song);
-       setShowView(true);
-       setShowForm(false);
-     };
+  const loadSongs = async () => {
+    try {
+      const data = await fetchSongs();
+      setSongs(Array.isArray(data) ? data : data.songs || []);
+    } catch (err) {
+      setAlert({ type: "error", message: err.message || "Failed to load songs" });
+    }
+  };
 
-     const handleDelete = async (id, title) => {
-       const confirmed = confirm(`Are you sure you want to delete ${title}?`);
-       if (!confirmed) return;
+  const handleAdd = () => {
+    setSelectedSong(null);
+    setShowForm(true);
+    setShowView(false);
+  };
 
-       try {
-         await deleteSong(id);
-         toast({ title: "Success", description: `${title} has been deleted.` });
-         loadSongs();
-       } catch (err) {
-         toast({ variant: "destructive", title: "Error", description: err.message });
-       }
-     };
+  const handleEdit = (song) => {
+    setSelectedSong(song);
+    setShowForm(true);
+    setShowView(false);
+  };
 
-     const handleFormSubmit = async (songData) => {
-       try {
-         if (selectedSong) {
-           await updateSong(selectedSong.id, songData);
-           toast({ title: "Success", description: `${songData.title} has been updated.` });
-         } else {
-           await createSong(songData);
-           toast({ title: "Success", description: `${songData.title} has been added.` });
-         }
-         setShowForm(false);
-         setSelectedSong(null);
-         await loadSongs();
-       } catch (err) {
-         toast({ variant: "destructive", title: "Error", description: err.message });
-       }
-     };
+  const handleView = (song) => {
+    setSelectedSong(song);
+    setShowView(true);
+    setShowForm(false);
+  };
 
-     if (!user || user.role !== "admin") {
-       toast({
-         variant: "destructive",
-         title: "Access Denied",
-         description: "Admin access only",
-       });
-       return <div className="flex items-center justify-center min-h-screen text-foreground">Access Denied</div>;
-     }
+  const handleDelete = async (id, title) => {
+    const confirmed = confirm(`Are you sure you want to delete ${title}?`);
+    if (!confirmed) return;
 
-     return (
-       <div className="space-y-6 p-8">
-         {showForm ? (
-           <SongForm
-             song={selectedSong}
-             onSubmit={handleFormSubmit}
-             onCancel={() => {
-               setShowForm(false);
-               setSelectedSong(null);
-             }}
-           />
-         ) : showView ? (
-           <SongView
-             song={selectedSong}
-             onClose={() => {
-               setShowView(false);
-               setSelectedSong(null);
-             }}
-           />
-         ) : (
-           <SongList
-             songs={songs}
-             onAdd={handleAdd}
-             onEdit={handleEdit}
-             onDelete={handleDelete}
-             onView={handleView}
-           />
-         )}
-       </div>
-     );
-   }
+    try {
+      await deleteSong(id);
+      await loadSongs();
+      setAlert({
+        type: "success",
+        message: `${title} deleted successfully!`,
+      });
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message: err.message || "Failed to delete song",
+      });
+    }
+  };
+
+  const handleFormSubmit = async (data, result) => {
+    setShowForm(false);
+    setSelectedSong(null);
+    await loadSongs();
+    if (result) {
+      setAlert(result);
+    }
+  };
+
+  return (
+    <div className="space-y-6 relative">
+      <AnimatePresence>
+        {alert && (
+          <Alert
+            type={alert.type}
+            message={alert.message}
+            onClose={() => setAlert(null)}
+          />
+        )}
+      </AnimatePresence>
+      {showForm ? (
+        <SongForm
+          song={selectedSong}
+          onSubmit={handleFormSubmit}
+          onCancel={() => {
+            setShowForm(false);
+            setSelectedSong(null);
+          }}
+        />
+      ) : showView ? (
+        <SongView
+          song={selectedSong}
+          onClose={() => {
+            setShowView(false);
+            setSelectedSong(null);
+          }}
+        />
+      ) : (
+        <SongList
+          songs={songs}
+          onAdd={handleAdd}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onView={handleView}
+        />
+      )}
+    </div>
+  );
+}

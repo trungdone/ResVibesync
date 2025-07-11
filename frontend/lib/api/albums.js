@@ -23,3 +23,11 @@ export async function fetchAlbumsByArtist(artist_id) {
       return albums.filter(album => album.artist_id === artist_id);
     });
 }
+export async function fetchAlbumsIncludingSong(songId) {
+  // gọi toàn bộ album (hoặc phân trang nếu nhiều)
+  const albums = await fetchAlbums();
+  // lọc client-side
+  return albums.filter((album) => album.songs.includes(songId));
+}
+
+

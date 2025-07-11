@@ -6,6 +6,11 @@
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 20, 20, 20;
   --background-end-rgb: 0, 0, 0;
+
+  --primary-gradient-from: #111827; /* gray-900 */
+  --primary-gradient-to: #1f2937;   /* gray-800 */
+  --primary-accent: #10b981;        /* emerald-500 */
+  --primary-accent-hover: #34d399;  /* emerald-400 */
 }
 
 body {

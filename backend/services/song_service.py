@@ -81,3 +81,4 @@ class SongService:
 
     def delete_song(self, song_id: str) -> bool:
         return self.song_repository.delete(song_id)
+    

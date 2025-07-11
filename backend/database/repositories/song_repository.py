@@ -76,3 +76,18 @@ class SongRepository:
             ]
         })
         return result.deleted_count > 0
+    
+    @staticmethod
+    def find_by_album_id(album_id: str, artist_id: str) -> List[dict]:
+        return list(
+            songs_collection.find({
+                "album": album_id,
+                "$or": [
+                    {"artistId": artist_id},
+                    {"artistId": ObjectId(artist_id)}  # để chắc ăn
+                ]
+            })
+        )
+    
+    
+

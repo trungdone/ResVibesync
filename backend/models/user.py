@@ -12,8 +12,12 @@ class UserCreate(UserBase):
     password: str
 
 class UserUpdate(UserBase):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
     password: Optional[str] = None
     avatar: Optional[str] = None
+    role: Optional[str] = None  
+    artist_id: Optional[str] = None
 
 class UserInDB(UserBase):
     id: str
@@ -21,7 +25,9 @@ class UserInDB(UserBase):
     created_at: datetime
     avatar: Optional[str] = None
     banned: bool = False
-    
+    likedSongs: list[str] = []
+    artist_id: Optional[str] = None
+    verified: bool = False 
 
     class Config:
         arbitrary_types_allowed = True
@@ -39,3 +45,9 @@ class UserOut(UserBase):
     banned: bool = False
     class Config:
         orm_mode = True
+
+class User(BaseModel):
+    id: str
+    email: str
+    role: str
+

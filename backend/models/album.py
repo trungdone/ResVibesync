@@ -22,6 +22,7 @@ class AlbumCreate(AlbumBase):
 
 class AlbumUpdate(BaseModel):
     title: Optional[str] = None
+    artist_id: Optional[str] = None
     cover_art: Optional[HttpUrl] = None  
     release_year: Optional[int] = None
     genres: Optional[List[str]] = None

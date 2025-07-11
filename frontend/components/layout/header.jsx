@@ -7,14 +7,20 @@ import { Search, Bell, ChevronDown } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import Image from "next/image"
 import { useMusic } from "@/context/music-context"
+import NotificationPopover from "@/components/notifications/notification-popover"
+import { useNotifications } from "@/context/notification-context"
 
 export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, isAuthenticated, signOut } = useAuth()
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
   const { resetPlayer } = useMusic()
-
+  const { notifications } = useNotifications()
+  const unreadCount = Array.isArray(notifications)
+  ? notifications.filter((n) => !n.read).length
+  : 0;
     const handleSignOut = () => {
     signOut()
     resetPlayer() // ✅ Dừng và reset player khi đăng xuất
@@ -43,17 +49,25 @@ const handleSearch = (e) => {
   }
   onChange={handleSearch}
   className="w-full bg-white/10 border border-white/10 rounded-full pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600"
-/>
-        
+/>      
       </div>
-
       <div className="flex items-center gap-4">
         {isAuthenticated ? (
           <>
-            <button className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20">
-              <Bell size={18} />
-            </button>
-
+       <button
+       className="relative w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 animate-bounce"
+       onClick={() => setShowNotifications(!showNotifications)}
+          >
+         <Bell size={18} />
+       {unreadCount > 0 && (
+     <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full text-xs px-1 animate-ping">
+      {unreadCount}
+    </span>
+       )}
+      </button>
+      {showNotifications && (
+  <NotificationPopover onClose={() => setShowNotifications(false)} />
+)}
             <div className="relative">
               <button
                 className="flex items-center gap-2 hover:bg-white/10 rounded-full pl-1 pr-3 py-1"

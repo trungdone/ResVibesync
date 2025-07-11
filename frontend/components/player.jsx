@@ -9,6 +9,7 @@ import {
   Repeat, Shuffle, Heart, MoreHorizontal, X
 } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
+import { toggleLikeSong } from "@/lib/api/user";
 
 export default function Player() {
   const {
@@ -28,12 +29,15 @@ export default function Player() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
+
   const progressBarRef = useRef(null);
   const [showMore, setShowMore] = useState(false);
   const [optionsOpenId, setOptionsOpenId] = useState(null);
   const popupRef = useRef(null);
-  const toggleLike = () => setIsLiked(!isLiked);
+  const [likedSongs, setLikedSongs] = useState(new Set());
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const isLiked = currentSong?.id && likedSongs.has(currentSong.id);
 
   useEffect(() => {
   console.log("🔁 Audio src updated:", currentSong?.audioUrl);
@@ -90,6 +94,7 @@ export default function Player() {
       setDuration(audio.duration || 0);
     }
   };
+  
 
 const handleProgressChange = (e) => {
   const audio = audioRef.current;
@@ -109,7 +114,6 @@ const handleProgressChange = (e) => {
   }
 };
 
-
   const handleVolumeChange = (e) => {
     const newVol = parseInt(e.target.value);
     setVolume(newVol);
@@ -126,6 +130,16 @@ const handleProgressChange = (e) => {
     } else {
       audio.volume = 0;
       setIsMuted(true);
+    }
+  };
+
+    const handleToggleLike = async () => {
+    if (!currentSong?.id || !token) return;
+    try {
+      const data = await toggleLikeSong(currentSong.id, token);
+      setLikedSongs(new Set(data.likedSongs));
+    } catch (err) {
+      console.error("❌ Failed to toggle like:", err);
     }
   };
 
@@ -155,7 +169,6 @@ const handleProgressChange = (e) => {
   autoPlay
 />
 
-
       <div className="flex items-center gap-4 w-1/4">
         <div className="relative w-14 h-14 rounded overflow-hidden flex-shrink-0">
           <Image
@@ -180,7 +193,8 @@ const handleProgressChange = (e) => {
         
         <button
           className={`text-gray-400 hover:text-white ${isLiked ? "text-purple-500" : ""}`}
-          onClick={toggleLike}
+          onClick={handleToggleLike}
+          title={isLiked ? "Unlike" : "Like"}
         >
           <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
         </button>

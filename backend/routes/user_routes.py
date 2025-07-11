@@ -4,6 +4,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from models.user import UserRegister, UserUpdate
 from services.user_service import UserService
+from services.song_service import SongService
+from database.repositories.song_repository import SongRepository
+from database.repositories.artist_repository import ArtistRepository
 from auth import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
 
 router = APIRouter(tags=["user"])
@@ -23,8 +26,16 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     if user.banned:
         raise HTTPException(status_code=403, detail="Account is banned")
+
+    # lấy artist_id nếu có
+    artist_id = getattr(user, "artist_id", None)
+
     access_token = create_access_token(
-        data={"sub": user.id, "role": user.role},  # Sử dụng user.id trực tiếp
+        data={
+            "sub": user.id,
+            "role": user.role,
+            "artist_id": artist_id
+        },
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     return {"access_token": access_token, "token_type": "bearer"}
@@ -68,6 +79,13 @@ async def unban_user(user_id: str, current_user: dict = Depends(get_current_user
     UserService.unban_user(user_id)
     return {"message": "User unbanned"}
 
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    UserService.delete_user(user_id)
+    return {"message": "User deleted successfully"}
+
 @router.put("/me")
 async def update_user_profile(
     user_data: UserUpdate,
@@ -82,3 +100,35 @@ async def admin_search(query: str, current_user: dict = Depends(get_current_user
         raise HTTPException(status_code=403, detail="Not authorized")
     users = UserService.search_users(query)
     return {"users": users}
+
+@router.post("/users/{user_id}/demote-artist")
+async def demote_artist_to_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    UserService.demote_artist_to_user(user_id)
+    return {"message": "Artist demoted to user"}
+
+@router.post("/me/toggle-like/{song_id}")
+def toggle_like_song(song_id: str, current_user: dict = Depends(get_current_user)):
+    liked_songs = UserService.toggle_like_song(current_user["id"], song_id)
+    return {"likedSongs": liked_songs}
+
+@router.get("/me/following")
+async def get_followed_artists(current_user: dict = Depends(get_current_user)):
+    from services.follow_service import FollowService
+
+    follow_service = FollowService()
+    artists = follow_service.get_followed_artists(current_user["id"])  # ✅ Đã sửa "_id" thành "id"
+
+    return {"following": artists}
+
+@router.get("/me/liked-songs")
+def get_liked_songs(current_user: dict = Depends(get_current_user)):
+
+    song_service = SongService(SongRepository(), ArtistRepository())
+    liked_song_ids = current_user.get("likedSongs", [])
+
+    songs = [song_service.get_song_by_id(song_id) for song_id in liked_song_ids]
+    # Lọc bỏ những bài hát None (không còn tồn tại)
+    songs = [s for s in songs if s]
+    return {"liked": songs}

@@ -7,6 +7,7 @@ import { useAuth } from "@/context/auth-context";
 import { MusicProvider } from "@/context/music-context";
 import Header from "@/components/layout/header";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { NotificationProvider } from "@/context/notification-context";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ export default function AdminLayout({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
       <MusicProvider>
+        <NotificationProvider>
         <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
           <Header />
           <div className="flex flex-1">
@@ -88,6 +90,10 @@ export default function AdminLayout({ children }) {
                   </motion.div>
                   Artists
                 </Link>
+                <Link href="/admin/artist-requests" className="flex items-center gap-2 p-2 hover:bg-purple-600/20 rounded">
+  <Users size={20} />
+  Artist Requests
+</Link>
                 <Link
                   href="/admin/albums"
                   className="flex items-center gap-3 p-3 rounded-lg text-gray-200 hover:bg-gradient-to-r hover:from-green-500/20 hover:to-green-600/20 hover:text-green-400 transition-all duration-200 group"
@@ -153,6 +159,7 @@ export default function AdminLayout({ children }) {
             <main className="flex-1 p-8 bg-gray-900/90 rounded-lg shadow-inner ml-64">{children}</main>
           </div>
         </div>
+        </NotificationProvider>
       </MusicProvider>
     </QueryClientProvider>
   );

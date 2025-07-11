@@ -78,3 +78,26 @@ class AlbumRepository:
             return result.deleted_count > 0
         except Exception as e:
             raise ValueError(f"Failed to delete albums by artist_id: {str(e)}")
+
+    @staticmethod
+    def add_song_to_album(album_id: str, song_id: str) -> bool:
+        try:
+            result = albums_collection.update_one(
+                {"_id": AlbumRepository._validate_object_id(album_id)},
+                {"$addToSet": {"songs": song_id}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            raise ValueError(f"Failed to add song to album: {str(e)}")
+        
+    @staticmethod
+    def remove_song_from_album(album_id: str, song_id: str) -> bool:
+        try:
+            result = albums_collection.update_one(
+                {"_id": AlbumRepository._validate_object_id(album_id)},
+                {"$pull": {"songs": song_id}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            raise ValueError(f"Failed to remove song from album: {str(e)}")
+
