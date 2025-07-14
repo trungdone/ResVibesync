@@ -1,7 +1,5 @@
 {
   "/song/[id]/page": "app/song/[id]/page.js",
-  "/profile/page": "app/profile/page.js",
   "/artist/[id]/page": "app/artist/[id]/page.js",
-  "/page": "app/page.js",
-  "/signin/page": "app/signin/page.js"
+  "/page": "app/page.js"
 }

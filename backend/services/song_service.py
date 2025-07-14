@@ -7,6 +7,8 @@ from database.repositories.song_repository import SongRepository
 from database.repositories.artist_repository import ArtistRepository
 from urllib.request import urlopen
 from urllib.error import HTTPError
+from fastapi import HTTPException
+
 
 class SongService:
     def __init__(self, song_repository: SongRepository, artist_repository: ArtistRepository):
@@ -81,3 +83,26 @@ class SongService:
 
     def delete_song(self, song_id: str) -> bool:
         return self.song_repository.delete(song_id)
+    
+
+    # services/song_service.py
+    def get_all_songs_simple(self):
+     try:
+        songs = self.song_repository.find_all()
+        return [
+            {
+                "title": song.get("title", ""),
+                "song_id": str(song["_id"]),
+            }
+            for song in songs
+        ]
+     except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi lấy bài hát: {str(e)}")
+
+
+    
+    
+
+
+
+

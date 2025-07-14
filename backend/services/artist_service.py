@@ -159,3 +159,30 @@ class ArtistService:
             return True
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to unfollow artist: {str(e)}")
+        # services/artist_service.py
+    def get_all_artists_simple(self):
+     try:
+        artists = self.artist_repo.find_all()
+        return [
+            {
+                "name": artist.get("name", ""),
+                "artist_id": str(artist["_id"]),
+                "aliases": artist.get("aliases", []),
+            }
+            for artist in artists
+        ]
+     except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi lấy nghệ sĩ: {str(e)}")
+        
+    
+        
+    
+
+        
+
+
+
+    
+
+
+
