@@ -55,3 +55,14 @@ export async function fetchTopSongs(limit = 10) {
       return songs.sort(() => 0.5 - Math.random()).slice(0, limit); // Sắp xếp ngẫu nhiên
     });
 }
+
+export async function fetchSongsByKeyword(keyword) {
+  try {
+    const query = encodeURIComponent(keyword);
+    const data = await apiFetch(`/api/search?query=${query}`);
+    return data?.songs || [];
+  } catch (error) {
+    console.error(`fetchSongsByKeyword error (${keyword}):`, error);
+    return [];
+  }
+}

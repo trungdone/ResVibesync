@@ -12,6 +12,7 @@ class SongBase(BaseModel):
     genre: List[str]
     coverArt: Optional[HttpUrl] = None
     audioUrl: Optional[HttpUrl] = None
+    lyrics_lrc: Optional[str] = None
     artistId: str
 
     @validator("releaseYear")
@@ -38,12 +39,14 @@ class SongUpdate(BaseModel):
     genre: Optional[List[str]] = None
     coverArt: Optional[HttpUrl] = None
     audioUrl: Optional[HttpUrl] = None
+    lyrics_lrc: Optional[str] = None
     artistId: Optional[str] = None
 
 class SongInDB(SongBase):
     id: str
     created_at: datetime
     updated_at: Optional[datetime] = None
+    lyrics_lrc: Optional[str] = None
 
     class Config:
         arbitrary_types_allowed = True

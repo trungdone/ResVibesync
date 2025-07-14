@@ -1,28 +1,79 @@
-import Link from "next/link";
-import SongList from "../songs/song-list"; 
-import { fetchSongs } from "@/lib/api";
+"use client";
 
-export default async function NewReleases() {
-  let newReleases = [];
-  try {
-    newReleases = await fetchSongs({ sort: "releaseYear", limit: 19 });
-    // Kiểm tra và trích xuất mảng songs nếu newReleases là object
-    newReleases = Array.isArray(newReleases) ? newReleases : newReleases?.songs || [];
-  } catch (error) {
-    console.error("Error in NewReleases:", error);
-    newReleases = [];
-  }
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Play } from "lucide-react";
+import SongList from "../songs/song-list";
+import { fetchSongs } from "@/lib/api";
+import { useMusic } from "@/context/music-context";
+
+export default function NewReleases() {
+  const [newReleases, setNewReleases] = useState([]);
+  const [isActive, setIsActive] = useState(false);
+  const {
+    setSongs,
+    setContext,
+    setContextId,
+    playSong,
+    isPlaying,
+    currentSong,
+    songs,
+  } = useMusic();
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const fetched = await fetchSongs({ sort: "releaseYear", limit: 25 });
+        const songs = Array.isArray(fetched) ? fetched : fetched?.songs || [];
+        setNewReleases(songs);
+      } catch (err) {
+        console.error("Error in NewReleases:", err);
+        setNewReleases([]);
+      }
+    }
+    load();
+  }, []);
+
+  const handlePlayAll = () => {
+    if (!newReleases || newReleases.length === 0) return;
+    setSongs(newReleases);
+    setContext("new-releases");
+    setContextId(null);
+    playSong(newReleases[0]);
+    setIsActive(true);
+  };
+
+  // Khi người dùng phát bất kỳ bài nào trong danh sách
+  const handlePlayFromList = (song) => {
+    setSongs(newReleases);
+    setContext("new-releases");
+    setContextId(null);
+    playSong(song);
+    setIsActive(true);
+  };
 
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">New Releases</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold">New Releases</h2>
+          <button
+            onClick={handlePlayAll}
+            title="Play All"
+            className={`p-2 rounded-full transition ${
+              isActive ? "bg-purple-600 text-white" : "bg-gray-800 text-white hover:bg-purple-400"
+            }`}
+          >
+            <Play size={20} />
+          </button>
+        </div>
         <Link href="/new-releases" className="text-sm text-purple-400 hover:underline">
           View All
         </Link>
       </div>
+
       {newReleases.length > 0 ? (
-        <SongList songs={newReleases} />
+        <SongList songs={newReleases} onPlaySong={handlePlayFromList} />
       ) : (
         <p>No new releases available</p>
       )}

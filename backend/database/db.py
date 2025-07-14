@@ -8,8 +8,8 @@ client = MongoClient("mongodb+srv://trungdnbh00901:trudo42@vibesync.gaqe5kb.mong
 # client = MongoClient("mongodb://localhost:27017/")
 db = client["Vibesync"]
 
-history_collection = db.history
-recommendations_collection = db.recommendations
+history_collection = db["history"]
+recommendations_collection = db["recommendations"]
 playlists_collection = db["playlists"]
 songs_collection = db["songs"]
 artists_collection = db["artists"]
@@ -20,6 +20,8 @@ artist_requests_collection = db["artist_requests"]
 notifications_collection =db["notifications"]
 follows_collection = db["follows"]
 likes_collection = db["likes"]
+chat_history_collection = db["chat_history"]
+
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

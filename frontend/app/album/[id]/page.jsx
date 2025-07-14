@@ -1,72 +1,105 @@
-"use client";
+"use client"; 
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { fetchAlbumById } from "@/lib/api/albums";
-import SongList from "@/components/songs/song-list";
-import { fetchSongsByIds } from "@/lib/api/songs";
-import { fetchArtistById } from "@/lib/api/artists";
+import Link from "next/link";
+import {
+  Play, Pause, Shuffle, SkipBack, SkipForward,
+  Repeat, MoreHorizontal, Share2, Plus, Eye ,RotateCcw
+} from "lucide-react";
 
-async function toggleFollowArtist(artistId, follow) {
-  try {
-    console.log(`${follow ? "Following" : "Unfollowing"} artist with ID: ${artistId}`);
-    // Replace with actual API call here
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to toggle follow:", error);
-    return { success: false, error: error.message };
-  }
-}
+import { fetchAlbumById } from "@/lib/api/albums";
+import { fetchArtistById } from "@/lib/api/artists";
+import SongList from "@/components/songs/song-list";
+import { useMusic } from "@/context/music-context";
 
 export default function AlbumDetailPage() {
-  const params = useParams();
-  const id = params.id;
-  const [isFollowing, setIsFollowing] = useState(false);
+  const { id } = useParams();
+
   const [album, setAlbum] = useState(null);
+  const [artist, setArtist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [songs, setSongs] = useState([]);
-  const [artist, setArtist] = useState(null); 
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
+  
 
-useEffect(() => {
-  async function loadAlbum() {
-    try {
-      setLoading(true);
+  const {
+    songs,
+    currentSong,
+    isPlaying,
+    isShuffling,
+    repeatMode,
+    setContext,
+    setContextId,
+    playSong,
+    togglePlayPause,
+    toggleShuffle,
+    toggleRepeat,
+    nextSong,
+    prevSong,
+    updateSongsForContext,
+  } = useMusic();
 
-      const albumData = await fetchAlbumById(id);
-      if (!albumData) throw new Error("Album not found");
+  // Load album + setContext
+  useEffect(() => {
+    async function loadAlbum() {
+      try {
+        setLoading(true);
+        const albumData = await fetchAlbumById(id);
+        if (!albumData) throw new Error("Album not found");
 
-      setAlbum(albumData);
+        setAlbum(albumData);
 
-      // ✅ Fetch chi tiết các bài hát
-      if (albumData.songs && albumData.songs.length > 0) {
-        const songsData = await fetchSongsByIds(albumData.songs);
-        setSongs(songsData);
-        const artistData = await fetchArtistById(albumData.artist_id);
-setArtist(artistData);
+        if (albumData.artist_id) {
+          const artistData = await fetchArtistById(albumData.artist_id);
+          setArtist(artistData);
+        }
+
+        // ✅ Trigger context to fetch songs
+        setContext("album");
+        setContextId(albumData._id);
+      } catch (err) {
+        console.error("Error fetching album:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Error fetching album:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
     }
-  }
 
-  loadAlbum();
+    loadAlbum();
+  }, [id]);
+
+  const handlePlayAll = () => {
+    if (songs.length > 0) {
+      playSong(songs[0]);
+    }
+  };
+  
+  useEffect(() => {
+  if (id) {
+    setContext("album");
+    setContextId(id);
+  }
 }, [id]);
 
-  const handleFollow = async () => {
-    if (!artist) return;
-    const result = await toggleFollowArtist(artist._id, !isFollowing);
-    if (result.success) {
-      setIsFollowing((prev) => !prev);
-    }
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => alert("Link copied to clipboard!"))
+      .catch(err => console.error("Failed to copy:", err));
+  };
+
+  const handleAddToPlaylist = () => {
+    alert("⚙️ This feature is under construction.");
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-[60vh]">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-[60vh] bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    );
   }
 
   if (error || !album) {
@@ -79,6 +112,7 @@ setArtist(artistData);
 
   return (
     <div className="space-y-8 pb-24 max-w-6xl mx-auto">
+      {/* Album Header */}
       <div className="flex flex-col md:flex-row gap-8 items-center md:items-start p-4 bg-gray-900 rounded-lg shadow-lg">
         <div className="relative w-64 h-64 rounded-lg overflow-hidden">
           <Image
@@ -89,79 +123,46 @@ setArtist(artistData);
             className="object-cover"
           />
         </div>
+
         <div className="flex-1 text-center md:text-left">
           <h1 className="text-4xl font-bold text-white mb-2">{album.title}</h1>
           <p className="text-gray-300">Release Year: {album.release_year}</p>
-          <p className="text-gray-300">Genre: {album.genres}</p>
-          <p className="text-gray-300">
-          Artist: {artist ? artist.name : "Loading..."}
-         </p>
+          <p className="text-gray-300">Genre: {album.genres?.join(", ")}</p>
+          <p className="text-gray-300 mb-4">
+            Artist: {artist ? (
+              <Link href={`/artist/${artist._id}`} className="underline hover:text-white">
+                {artist.name}
+              </Link>
+            ) : "Loading..."}
+          </p>
 
-        </div>
-      </div>
-      <div className="p-4 bg-gray-900 rounded-lg shadow-lg">
-        <h3 className="text-xl font-semibold text-white mb-4">Songs</h3>
-        {album.songs && album.songs.length > 0 ? (
-       <SongList songs={songs} />
-
-        ) : (
-          <p className="text-gray-400">No songs available for this album.</p>
-        )}
-      </div>
-                <div className="flex flex-col md:flex-row gap-4 items-center mt-4">
-            {/* Play All */}
+          {/* Controls */}
+          <div className="flex flex-col md:flex-row flex-wrap gap-4 items-center mt-4">
             <button
-              className={`bg-green-500 text-black font-semibold px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
-                isPlaying ? "bg-green-600" : "hover:bg-green-400"
-              } disabled:opacity-50`}
+              className="bg-green-500 text-black font-semibold px-6 py-3 rounded-full flex items-center gap-2 hover:bg-green-400 transition"
               onClick={handlePlayAll}
               disabled={songs.length === 0}
-              aria-label="Play all songs"
             >
               <Play size={20} /> Play All
             </button>
 
-            {/* Shuffle */}
             <button
-              className={`bg-gray-800 text-gray-300 px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
-                isShuffling ? "bg-green-600 hover:bg-green-400" : "hover:bg-gray-700"
+              className={`bg-gray-800 text-gray-300 px-6 py-3 rounded-full flex items-center gap-2 transition ${
+                isShuffling ? "bg-green-600" : "hover:bg-gray-700"
               }`}
-              onClick={handleShuffle}
+              onClick={toggleShuffle}
               disabled={songs.length === 0}
-              aria-label="Shuffle songs"
             >
               <Shuffle size={20} /> Shuffle
             </button>
 
-            {/* Follow */}
-            <button
-              className={`bg-gray-800 text-gray-300 px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
-                isFollowing ? "bg-green-600 hover:bg-green-400" : "hover:bg-gray-700"
-              }`}
-              onClick={handleFollow}
-              disabled={!artist}
-              aria-label={isFollowing ? "Unfollow artist" : "Follow artist"}
-            >
-              {isFollowing ? (
-                <>
-                  <Heart size={20} fill="currentColor" /> Following
-                </>
-              ) : (
-                <>
-                  <Heart size={20} /> Follow
-                </>
-              )}
-            </button>
-
-            {/* More Menu */}
+            {/* More */}
             <div className="relative" ref={menuRef}>
               <button
-                className={`bg-gray-800 text-gray-300 px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
-                  showMenu ? "bg-green-600 hover:bg-green-400" : "hover:bg-gray-700"
+                className={`bg-gray-800 text-gray-300 px-6 py-3 rounded-full flex items-center gap-2 transition ${
+                  showMenu ? "bg-green-600" : "hover:bg-gray-700"
                 }`}
                 onClick={() => setShowMenu(!showMenu)}
-                aria-label="More options"
-                aria-expanded={showMenu}
               >
                 <MoreHorizontal size={20} /> More
               </button>
@@ -171,14 +172,12 @@ setArtist(artistData);
                   <button
                     className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2"
                     onClick={handleShare}
-                    aria-label="Share album"
                   >
                     <Share2 size={18} /> Share
                   </button>
                   <button
                     className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2"
                     onClick={handleAddToPlaylist}
-                    aria-label="Add to playlist"
                   >
                     <Plus size={18} /> Add to Playlist
                   </button>
@@ -187,7 +186,6 @@ setArtist(artistData);
                       href={`/artist/${artist._id}`}
                       className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2"
                       onClick={() => setShowMenu(false)}
-                      aria-label="View artist details"
                     >
                       <Eye size={18} /> View Artist Details
                     </Link>
@@ -196,8 +194,30 @@ setArtist(artistData);
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+{/* Song List */}
+<div className="p-4 bg-gray-900 rounded-lg shadow-lg">
+  <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center gap-2">
+      <h3 className="text-xl font-semibold text-white">Songs</h3>
+      <button
+        onClick={() => updateSongsForContext("album", id)}
+        className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition"
+        title="Reload songs"
+      >
+        <RotateCcw size={18} />
+      </button>
+    </div>
+  </div>
+
+  {songs && songs.length > 0 ? (
+    <SongList songs={songs} />
+  ) : (
+    <p className="text-gray-400">No songs available for this album.</p>
+  )}
+</div>
     </div>
   );
 }
-
-

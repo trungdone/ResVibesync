@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useRef } from "react";
-import { fetchSongs } from "@/lib/api";
 import axios from "axios";
 
 const MusicContext = createContext();
@@ -11,9 +10,9 @@ export function MusicProvider({ children }) {
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
-  const [repeatMode, setRepeatMode] = useState(0); // 0: off, 1: repeat one, 2: repeat all
-  const [context, setContext] = useState("new-releases"); // Ngữ cảnh: new-releases, playlist, album, artist
-  const [contextId, setContextId] = useState(null); // ID của playlist, album, artist
+  const [repeatMode, setRepeatMode] = useState(0);
+  const [context, setContext] = useState("new-releases");
+  const [contextId, setContextId] = useState(null);
   const audioRef = useRef(null);
 
   const resetPlayer = () => {
@@ -25,42 +24,43 @@ export function MusicProvider({ children }) {
     setIsPlaying(false);
   };
 
-  // Tải bài hát theo ngữ cảnh
   const updateSongsForContext = async (newContext, newContextId) => {
     try {
-      let data = [];
+      if (!newContextId && ["album", "playlist", "artist"].includes(newContext)) return;
+
       const token = localStorage.getItem("token");
-      if (newContext === "new-releases") {
-        data = await fetchSongs();
+      let data = [];
+
+      if (newContext === "album") {
+        const res = await axios.get(`http://localhost:8000/api/albums/${newContextId}/songs`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        data = res.data.songs || [];
       } else if (newContext === "playlist") {
         const res = await axios.get(`http://localhost:8000/api/playlists/${newContextId}/songs`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         data = res.data.songs || [];
-      } else if (newContext === "album") {
-        const res = await axios.get(`http://localhost:8000/api/albums/${newContextId}/songs`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        data = res.data.songs || [];
       } else if (newContext === "artist") {
-        const res = await axios.get(`http://localhost:8000/api/artists/${newContextId}/songs`, {
+        const res = await axios.get(`http://localhost:8000/api/songs?artistId=${newContextId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         data = res.data.songs || [];
       }
+
       setSongs(data);
-      // Nếu currentSong không có trong danh sách mới, reset
-      if (currentSong && !data.some(s => s.id === currentSong.id)) {
-        resetPlayer();
-      }
     } catch (err) {
-      console.error(`Failed to load songs for ${newContext}:`, err);
+      console.error("❌ updateSongsForContext failed:", err);
       setSongs([]);
     }
   };
 
+  // ✅ CHỈ fetch khi songs rỗng
   useEffect(() => {
-    updateSongsForContext(context, contextId);
+    if (!context || !contextId) return;
+    if (songs.length === 0) {
+      updateSongsForContext(context, contextId);
+    }
   }, [context, contextId]);
 
   const playSong = (song) => {
@@ -77,32 +77,16 @@ export function MusicProvider({ children }) {
       setIsPlaying(false);
     } else {
       if (audio.currentTime >= audio.duration) audio.currentTime = 0;
-      audio.play().then(() => setIsPlaying(true)).catch((err) => {
-        console.error("Playback failed:", err);
-      });
+      audio.play().then(() => setIsPlaying(true)).catch(console.error);
     }
   };
 
   const nextSong = () => {
     if (!songs.length || !currentSong) return;
-    if (songs.length === 1) {
-      if (repeatMode === 1) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().then(() => setIsPlaying(true));
-      } else {
-        setIsPlaying(false);
-      }
-      return;
-    }
+    const idx = songs.findIndex(s => s.id.toString() === currentSong.id.toString());
+    if (idx === -1) return playSong(songs[0]);
 
-    let idx = songs.findIndex(s => s.id.toString() === currentSong.id.toString());
-    if (idx === -1) {
-      // Nếu currentSong không có trong danh sách, phát bài đầu tiên
-      playSong(songs[0]);
-      return;
-    }
-
-    let next = null;
+    let next;
     if (isShuffling) {
       let r;
       do {
@@ -112,80 +96,32 @@ export function MusicProvider({ children }) {
     } else {
       const isLast = idx === songs.length - 1;
       if (isLast) {
-        if (repeatMode === 2) {
-          next = songs[0]; // Repeat All
-        } else if (repeatMode === 1) {
-          audioRef.current.currentTime = 0; // Repeat One
-          audioRef.current.play().then(() => setIsPlaying(true));
-          return;
-        } else {
-          setIsPlaying(false); // No repeat
-          return;
-        }
+        if (repeatMode === 2) next = songs[0];
+        else if (repeatMode === 1) return audioRef.current.play();
+        else return setIsPlaying(false);
       } else {
-        next = songs[idx + 1]; // Next song
+        next = songs[idx + 1];
       }
     }
-
-    if (next) {
-      playSong(next);
-    }
+    if (next) playSong(next);
   };
 
   const prevSong = () => {
     if (!songs.length || !currentSong) return;
-    if (songs.length === 1) {
-      if (repeatMode === 1) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().then(() => setIsPlaying(true));
-      } else {
-        setIsPlaying(false);
-      }
-      return;
-    }
+    const idx = songs.findIndex(s => s.id.toString() === currentSong.id.toString());
+    if (idx === -1) return playSong(songs[0]);
 
-    let idx = songs.findIndex(s => s.id.toString() === currentSong.id.toString());
-    if (idx === -1) {
-      playSong(songs[0]);
-      return;
-    }
-
-    const isFirst = idx === 0;
-    let prev = null;
-    if (isFirst) {
-      if (repeatMode === 2) {
-        prev = songs[songs.length - 1]; // Repeat All
-      } else if (repeatMode === 1) {
-        audioRef.current.currentTime = 0; // Repeat One
-        audioRef.current.play().then(() => setIsPlaying(true));
-        return;
-      } else {
-        setIsPlaying(false); // No repeat
-        return;
-      }
+    let prev;
+    if (idx === 0) {
+      if (repeatMode === 2) prev = songs[songs.length - 1];
+      else if (repeatMode === 1) return audioRef.current.play();
+      else return setIsPlaying(false);
     } else {
-      prev = songs[idx - 1]; // Previous song
+      prev = songs[idx - 1];
     }
-
-    if (prev) {
-      playSong(prev);
-    }
+    if (prev) playSong(prev);
   };
 
-  const toggleShuffle = () => {
-    if (songs.length <= 1) return; // Vô hiệu hóa nếu chỉ có 1 bài
-    setIsShuffling(p => !p);
-  };
-
-  const toggleRepeat = () => {
-    if (songs.length <= 1) {
-      setRepeatMode(m => (m === 1 ? 0 : 1)); // Chỉ cho phép Repeat One hoặc Off
-    } else {
-      setRepeatMode(m => (m + 1) % 3); // Off, Repeat One, Repeat All
-    }
-  };
-
-  // Xử lý khi audio kết thúc
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -193,7 +129,7 @@ export function MusicProvider({ children }) {
     const handleEnded = () => {
       if (repeatMode === 1) {
         audio.currentTime = 0;
-        audio.play().then(() => setIsPlaying(true));
+        audio.play();
       } else {
         nextSong();
       }
@@ -206,9 +142,10 @@ export function MusicProvider({ children }) {
   return (
     <MusicContext.Provider value={{
       songs, currentSong, isPlaying, isShuffling, repeatMode,
-      audioRef, playSong, togglePlayPause, nextSong, prevSong,
-      toggleShuffle, toggleRepeat, resetPlayer,
-      setContext, setContextId, updateSongsForContext
+      audioRef, playSong, togglePlayPause, nextSong, prevSong, setSongs,
+      toggleShuffle: () => setIsShuffling(p => !p),
+      toggleRepeat: () => setRepeatMode(m => songs.length <= 1 ? (m === 1 ? 0 : 1) : (m + 1) % 3),
+      resetPlayer, setContext, setContextId, updateSongsForContext
     }}>
       {children}
     </MusicContext.Provider>

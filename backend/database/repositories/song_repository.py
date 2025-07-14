@@ -1,6 +1,7 @@
 from database.db import songs_collection
 from bson import ObjectId
 from bson.errors import InvalidId
+from bson.regex import Regex
 from typing import List, Optional, Dict
 from datetime import datetime
 
@@ -89,5 +90,31 @@ class SongRepository:
             })
         )
     
-    
+    @staticmethod
+    def search_by_title(keyword: str, limit: int = 20) -> List[Dict]:
 
+        try:
+            regex = Regex(keyword, "i")  # 'i' = case‑insensitive
+            cursor = (
+                songs_collection.find({"title": {"$regex": regex}})
+                .sort("title", 1)
+                .limit(limit)
+            )
+            results = list(cursor)
+            print(f"search_by_title -> {len(results)} hit(s) for '{keyword}'")
+            return results
+        except Exception as e:
+            print(f"Error in search_by_title: {e}")
+            raise ValueError(f"Failed to search songs: {e}")
+
+    @staticmethod
+    def find_by_ids(song_ids: List[str]) -> List[Dict]:
+        try:
+            object_ids = [ObjectId(id) for id in song_ids]
+            songs = songs_collection.find({"_id": {"$in": object_ids}})
+            return list(songs)
+        except Exception as e:
+            print(f"Error in find_by_ids: {e}")
+            raise ValueError("Failed to find songs by IDs")
+   
+    

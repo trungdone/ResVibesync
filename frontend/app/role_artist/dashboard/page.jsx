@@ -99,7 +99,7 @@ async function loadData() {
       </div>
 
       <div className="flex gap-4">
-        <Link href="/role_artist/profile" className="btn-primary flex items-center gap-2">
+        <Link href="/role_artist/profile/edit" className="btn-primary flex items-center gap-2">
           <User size={20} /> Edit Profile
         </Link>
         <Link href="/role_artist/songs" className="btn-primary flex items-center gap-2">

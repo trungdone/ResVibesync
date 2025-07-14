@@ -12,39 +12,41 @@ export default function LibraryPage() {
   const [historySongs, setHistorySongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const token = localStorage.getItem("token");
+  const [token, setToken] = useState(null);
 
   useEffect(() => {
-    if (!token) {
+    const storedToken = localStorage.getItem("token");
+    if (!storedToken) {
       router.push("/signin");
     } else {
-      async function loadData() {
-        try {
-          setLoading(true);
-
-          // Gọi playlist
-          const playlistData = await fetchPlaylists();
-          setPlaylists(playlistData || []);
-
-          // Gọi song
-          const songData = await fetchSongs();
-          // Kiểm tra và xử lý songData
-          const songs = Array.isArray(songData) ? songData : songData?.songs || [];
-          if (songs.length === 0) {
-            console.warn("No songs data available.");
-          }
-          setLikedSongs(songs.slice(0, 10));
-          setHistorySongs(songs.slice(10, 20));
-        } catch (err) {
-          console.error("Failed to load library:", err);
-          router.push("/signin");
-        } finally {
-          setLoading(false);
-        }
-      }
-
-      loadData();
+      setToken(storedToken); // ← NEW: set token after loading
     }
+  }, [router]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function loadData() {
+      try {
+        setLoading(true);
+
+        const playlistData = await fetchPlaylists();
+        setPlaylists(playlistData || []);
+
+        const songData = await fetchSongs();
+        const songs = Array.isArray(songData) ? songData : songData?.songs || [];
+
+        setLikedSongs(songs.slice(0, 10));
+        setHistorySongs(songs.slice(10, 20));
+      } catch (err) {
+        console.error("Failed to load library:", err);
+        router.push("/signin");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
   }, [token, router]);
 
   if (!token || loading) {

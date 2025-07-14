@@ -25,6 +25,7 @@ class SongService:
             genre=song.get("genre", []),
             coverArt=song.get("coverArt", ""),
             audioUrl=song.get("audioUrl", ""),
+            lyrics_lrc=song.get("lyrics_lrc", None),
             artistId=str(song.get("artistId", "")),
             created_at=song.get("created_at", datetime.utcnow()),
             updated_at=song.get("updated_at", None)

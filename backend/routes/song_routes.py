@@ -6,6 +6,7 @@ from database.repositories.artist_repository import ArtistRepository
 from auth import get_current_user
 from pydantic import BaseModel
 from typing import List
+import random
 
 router = APIRouter(prefix="/songs", tags=["songs"])
 
@@ -55,3 +56,11 @@ async def delete_song(id: str, service: SongService = Depends(get_song_service))
     if not service.delete_song(id):
         raise HTTPException(status_code=404, detail="Song not found")
     return {"message": "Song deleted successfully"}
+
+@router.get("/random", response_model=SongInDB)
+async def get_random_song(service: SongService = Depends(get_song_service)):
+    songs = service.get_all_songs()
+    if not songs:
+        raise HTTPException(status_code=404, detail="No songs found")
+    return random.choice(songs)
+

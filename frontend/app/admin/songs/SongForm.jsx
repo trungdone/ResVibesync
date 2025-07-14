@@ -47,6 +47,7 @@ export default function SongForm({ song, onSubmit, onCancel }) {
       genre: song?.genre || [],
       coverArt: song?.coverArt || "",
       audioUrl: song?.audioUrl || "",
+      lyrics_lrc: song?.lyrics_lrc || "",
       artistImage: "",
     },
   });
@@ -417,6 +418,14 @@ export default function SongForm({ song, onSubmit, onCancel }) {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+<label className="block mb-2 text-sm font-medium text-white">Lyrics (.LRC format)</label>
+<textarea
+  {...register("lyrics_lrc")}
+  rows={8}
+  placeholder="[00:10.00]First line\n[00:20.00]Second line"
+  className="w-full p-2 rounded-lg bg-gray-800 text-white border border-gray-600"
+/>
+
                   <div className="flex flex-wrap gap-2">
                     {genres.map((genre, index) => (
                       <Badge

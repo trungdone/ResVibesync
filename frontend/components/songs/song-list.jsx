@@ -9,22 +9,33 @@ import { formatDuration } from "@/lib/utils";
 import WaveBars from "@/components/ui/WaveBars";
 import SongActionsMenu from "./song-actions-menu";
 
+
 export default function SongList({ songs: propSongs }) {
-  const { playSong, isPlaying, currentSong, togglePlayPause, nextSong } = useMusic();
+  const { playSong, isPlaying, currentSong, togglePlayPause, nextSong,  setSongs,
+  setContext,setContextId } = useMusic();
   const [optionsOpenId, setOptionsOpenId] = useState(null);
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
   const [likedSongs, setLikedSongs] = useState(new Set());
   const moreBtnRefs = useRef({});
   const popupRef = useRef(null);
   const observerRef = useRef(null);
+  const scrollRef = useRef(null);
+  const scrollTimeoutRef = useRef(null);
 
-  const handlePlayClick = (song) => {
-    if (currentSong?.id?.toString() === song.id?.toString()) {
-      togglePlayPause();
-    } else {
-      playSong(song);
-    }
-  };
+const handlePlayClick = (song) => {
+  if (!song) return;
+
+  // Nếu đang phát bài đó thì toggle play/pause
+  if (currentSong?.id?.toString() === song.id?.toString()) {
+    togglePlayPause();
+  } else {
+    // Gán toàn bộ danh sách hiện tại làm context
+    setSongs(propSongs);
+    setContext("new-releases"); 
+    setContextId(null); 
+    playSong(song); 
+  }
+};
 
   const toggleLike = (songId) => {
     const updated = new Set(likedSongs);
@@ -33,11 +44,7 @@ export default function SongList({ songs: propSongs }) {
   };
 
   const toggleOptions = (songId) => {
-    if (optionsOpenId === songId) {
-      setOptionsOpenId(null);
-      return;
-    }
-
+    if (optionsOpenId === songId) return setOptionsOpenId(null);
     const rect = moreBtnRefs.current[songId]?.getBoundingClientRect();
     if (rect) {
       setPopupPos({
@@ -48,10 +55,9 @@ export default function SongList({ songs: propSongs }) {
     setOptionsOpenId(songId);
   };
 
-  // Auto-close popup when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (popupRef.current && !popupRef.current.contains(event.target)) {
+    const handleClickOutside = (e) => {
+      if (popupRef.current && !popupRef.current.contains(e.target)) {
         setOptionsOpenId(null);
       }
     };
@@ -59,238 +65,184 @@ export default function SongList({ songs: propSongs }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Auto-close popup when More button is out of view
   useEffect(() => {
     if (!optionsOpenId || !moreBtnRefs.current[optionsOpenId]) return;
 
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0] && !entries[0].isIntersecting) {
-          setOptionsOpenId(null);
-        }
+      ([entry]) => {
+        if (!entry.isIntersecting) setOptionsOpenId(null);
       },
       { threshold: 0.1 }
     );
 
     observer.observe(moreBtnRefs.current[optionsOpenId]);
     observerRef.current = observer;
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
+    return () => observer.disconnect();
   }, [optionsOpenId]);
 
-  // Handle other actions
-  const handleLyrics = (songId) => {
-    console.log(`View lyrics for song ${songId}`);
-    setOptionsOpenId(null);
-    // TODO: Implement lyrics functionality
-  };
-
+  const handleLyrics = () => setOptionsOpenId(null);
   const handlePlayNext = () => {
     nextSong();
     setOptionsOpenId(null);
   };
 
-  const handleBlock = (songId) => {
-    console.log(`Block song ${songId}`);
+  const handleBlock = () => {
+    console.log(`Block song ${optionsOpenId}`);
     setOptionsOpenId(null);
-    // TODO: Implement block functionality
   };
 
-  const handleCopyLink = (songId) => {
-    const song = propSongs.find((s) => s.id === songId);
-    const link = `${window.location.origin}/song/${songId}`;
-    navigator.clipboard.writeText(link).then(() => {
-      alert("✅ Link copied to clipboard!");
-      setOptionsOpenId(null);
-    }).catch((err) => {
-      console.error("Failed to copy link:", err);
-      alert("❌ Failed to copy link.");
-      setOptionsOpenId(null);
-    });
+  const handleCopyLink = () => {
+    const link = `${window.location.origin}/song/${optionsOpenId}`;
+    navigator.clipboard
+      .writeText(link)
+      .then(() => alert("✅ Link copied to clipboard!"))
+      .catch(() => alert("❌ Failed to copy link."));
+    setOptionsOpenId(null);
   };
 
   return (
-    <div className="bg-white/5 rounded-lg overflow-hidden relative">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-white/10 text-left text-gray-400 text-sm">
-            <th className="p-4 w-12">#</th>
-            <th className="p-4">Title</th>
-            <th className="p-4 hidden md:table-cell">Album</th>
-            <th className="p-4 hidden md:table-cell">Duration</th>
-            <th className="p-4 w-12 text-right">•••</th>
-          </tr>
-        </thead>
-        <tbody>
-          {propSongs.map((song, index) => {
-            const isCurrent = currentSong?.id?.toString() === song.id?.toString();
-            const isLiked = likedSongs.has(song.id);
+    <div className="bg-zinc-900 shadow-md rounded-xl overflow-hidden relative border border-zinc-700">
+      <div
+        ref={scrollRef}
+        className="max-h-[360px] overflow-y-auto scroll-container transition-all duration-300 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900"
+        onScroll={() => {
+          if (scrollRef.current) scrollRef.current.classList.add("scrolling");
+          clearTimeout(scrollTimeoutRef.current);
+          scrollTimeoutRef.current = setTimeout(() => {
+            scrollRef.current?.classList.remove("scrolling");
+          }, 1000);
+        }}
+      >
+        <table className="w-full text-sm text-left">
+          <thead className="sticky top-0 bg-zinc-800 z-10">
+            <tr className="border-b border-zinc-700 text-gray-200 uppercase">
+              <th className="p-3 w-10 font-medium">#</th>
+              <th className="p-3 font-medium">Title</th>
+              <th className="p-3 font-medium hidden md:table-cell">Album</th>
+              <th className="p-3 font-medium hidden md:table-cell">Duration</th>
+              <th className="p-3 w-10 text-right font-medium">•••</th>
+            </tr>
+          </thead>
+          <tbody>
+            {propSongs.map((song, index) => {
+              const isCurrent = currentSong?.id?.toString() === song.id?.toString();
+              const isLiked = likedSongs.has(song.id);
 
-            return (
-              <tr
-                key={song.id}
-                className={`group border-b border-white/5 hover:bg-white/10 transition ${
-                  isCurrent ? "bg-white/10" : ""
-                }`}
-              >
-                <td className="p-4 text-gray-400">
-                  <div className="relative w-6 h-6 flex items-center justify-center">
-                    {isCurrent && isPlaying ? (
-                      <WaveBars />
-                    ) : (
-                      <>
-                        <span className="group-hover:opacity-0 transition-opacity">{index + 1}</span>
-                        <button
-                          className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center"
-                          onClick={() => handlePlayClick(song)}
-                        >
-                          <Play size={16} className="text-white" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </td>
-
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 rounded overflow-hidden flex-shrink-0">
-                      <Image
-                        src={song.coverArt || "/placeholder.svg"}
-                        alt={song.title}
-                        fill
-                        className={`object-cover ${isCurrent && isPlaying ? "animate-pulse" : ""}`}
-                      />
+              return (
+                <tr
+                  key={song.id}
+                  className={`group border-b border-zinc-700 hover:bg-zinc-800 transition ${
+                    isCurrent ? "bg-zinc-800" : ""
+                  }`}
+                >
+                  <td className="p-3 text-gray-400">
+                    <div className="w-6 h-6 flex items-center justify-center relative">
+                      {isCurrent && isPlaying ? (
+                        <WaveBars />
+                      ) : (
+                        <>
+                          <span className="group-hover:opacity-0">{index + 1}</span>
+                          <button
+                            onClick={() => handlePlayClick(song)}
+                            className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                          >
+                            <Play size={16} className="text-white" />
+                          </button>
+                        </>
+                      )}
                     </div>
-                    <div>
-                      <Link href={`/song/${song.id}`} className="font-medium hover:underline">
-                        {song.title}
-                      </Link>
-                      <p className="text-sm text-gray-400">{song.artist}</p>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0 relative">
+                        <Image
+                          src={song.coverArt || "/placeholder.svg"}
+                          alt={song.title || "Cover"}
+                          fill
+                          className={`object-cover ${
+                            isCurrent && isPlaying ? "animate-pulse" : ""
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <Link href={`/song/${song.id}`} className="text-gray-100 font-medium hover:underline">
+                          {song.title}
+                        </Link>
+                        <div className="text-sm text-gray-400">{song.artist}</div>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
+                  <td className="p-3 text-gray-400 hidden md:table-cell">
+                    {song.album || "N/A"}
+                  </td>
+                  <td className="p-3 text-gray-400 hidden md:table-cell">
+                    {formatDuration(song.duration || 0)}
+                  </td>
+                  <td className="p-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => toggleLike(song.id)}
+                        className={`hover:text-white ${
+                          isLiked ? "text-pink-500" : "text-gray-400"
+                        }`}
+                      >
+                        <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                      </button>
+                      <button
+                        ref={(el) => (moreBtnRefs.current[song.id] = el)}
+                        onClick={() => toggleOptions(song.id)}
+                        className="text-gray-400 hover:text-white"
+                      >
+                        <MoreHorizontal size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-                <td className="p-4 text-gray-400 hidden md:table-cell">{song.album || "N/A"}</td>
-
-                <td className="p-4 text-gray-400 hidden md:table-cell">
-                  {formatDuration(song.duration || 0)}
-                </td>
-
-                <td className="p-4 text-right relative">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => toggleLike(song.id)}
-                      className={`text-gray-400 hover:text-white ${isLiked ? "text-pink-500" : ""}`}
-                    >
-                      <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
-                    </button>
-
-                    <button
-                      ref={(el) => (moreBtnRefs.current[song.id] = el)}
-                      onClick={() => toggleOptions(song.id)}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      <MoreHorizontal size={18} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {/* Render popup with SongActionsMenu and other actions */}
+      {/* Popup menu */}
       {optionsOpenId && (
         <div
           ref={popupRef}
-          className="fixed w-72 bg-[#181818] text-white rounded-xl shadow-xl z-50 p-4 animate-fadeIn"
+          className="fixed w-72 bg-zinc-800 text-white rounded-xl shadow-xl z-50 p-4 animate-fadeIn"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
-          <div className="flex gap-3 items-start">
+          <div className="flex gap-3">
             <div className="w-14 h-14 relative rounded overflow-hidden flex-shrink-0">
               <Image
-                src={
-                  propSongs.find((s) => s.id === optionsOpenId)?.coverArt || "/placeholder.svg"
-                }
+                src={propSongs.find((s) => s.id === optionsOpenId)?.coverArt || "/placeholder.svg"}
                 alt="cover"
                 fill
                 className="object-cover"
               />
             </div>
-
-            <div className="flex-1 group relative">
-              <div className="font-semibold text-base truncate cursor-pointer group-hover:underline">
+            <div className="flex-1">
+              <div className="font-semibold text-base truncate">
                 {propSongs.find((s) => s.id === optionsOpenId)?.title}
               </div>
               <div className="text-sm text-gray-400">
                 {propSongs.find((s) => s.id === optionsOpenId)?.artist}
               </div>
-
-              {/* Tooltip on hover */}
-              <div className="absolute bottom-full left-0 mb-2 w-max bg-black/90 text-xs text-white px-3 py-2 rounded hidden group-hover:block z-50 whitespace-nowrap">
-                <div>
-                  <strong>Album:</strong>{" "}
-                  {propSongs.find((s) => s.id === optionsOpenId)?.album || "Unknown"}
-                </div>
-                <div>
-                  <strong>Genre:</strong>{" "}
-                  {Array.isArray(propSongs.find((s) => s.id === optionsOpenId)?.genre)
-                    ? propSongs.find((s) => s.id === optionsOpenId)?.genre.join(", ")
-                    : propSongs.find((s) => s.id === optionsOpenId)?.genre || "Unknown"}
-                </div>
-                <div>
-                  <strong>Publisher:</strong>{" "}
-                  {propSongs.find((s) => s.id === optionsOpenId)?.publisher || "Unknown"}
-                </div>
-              </div>
             </div>
-
-            <button
-              onClick={() => setOptionsOpenId(null)}
-              className="text-gray-400 hover:text-white"
-            >
+            <button onClick={() => setOptionsOpenId(null)} className="text-gray-400 hover:text-white">
               <X size={16} />
             </button>
           </div>
 
-          <div className="mt-4 border-t border-white/10 pt-3">
-            {/* SongActionsMenu for Add to Playlist */}
+          <div className="mt-4 border-t border-zinc-700 pt-3">
             <SongActionsMenu
               song={propSongs.find((s) => s.id === optionsOpenId)}
               onClose={() => setOptionsOpenId(null)}
             />
-
-            {/* Other actions */}
             <ul className="text-sm mt-2 space-y-2">
-              <li
-                className="hover:bg-white/10 rounded p-2 cursor-pointer"
-                onClick={() => handleLyrics(optionsOpenId)}
-              >
-                Lyrics
-              </li>
-              <li
-                className="hover:bg-white/10 rounded p-2 cursor-pointer"
-                onClick={() => handlePlayNext()}
-              >
-                Play Next
-              </li>
-              <li
-                className="hover:bg-white/10 rounded p-2 cursor-pointer"
-                onClick={() => handleBlock(optionsOpenId)}
-              >
-                Block
-              </li>
-              <li
-                className="hover:bg-white/10 rounded p-2 cursor-pointer"
-                onClick={() => handleCopyLink(optionsOpenId)}
-              >
-                Copy Link
-              </li>
+              <li onClick={handleLyrics} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Lyrics</li>
+              <li onClick={handlePlayNext} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Play Next</li>
+              <li onClick={handleBlock} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Block</li>
+              <li onClick={handleCopyLink} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Copy Link</li>
             </ul>
           </div>
         </div>

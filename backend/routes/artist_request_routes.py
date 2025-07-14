@@ -10,38 +10,36 @@ router = APIRouter(prefix="/api/artist_requests", tags=["artist_requests"])
 
 @router.post("", response_model=ArtistRequestInDB)
 async def create_artist_request(artist_request: ArtistRequestCreate, user: User = Depends(get_current_user)):
-    # check trùng
     existing = ArtistRequestRepository().find_by_user_id(user["id"])
 
     if existing:
-        raise HTTPException(status_code=400, detail="You already sent an artist request")
+        raise HTTPException(status_code=409, detail="You already sent an artist request")
 
     request_dict = artist_request.dict()
     request_dict["user_id"] = user["id"]
     request_dict["status"] = "pending"
     request_dict["created_at"] = datetime.utcnow()
     request_dict["updated_at"] = None
-
-    # ép social_links về mảng string
     request_dict["social_links"] = [str(link) for link in request_dict["social_links"]]
 
     repo = ArtistRequestRepository()
     inserted_id = repo.create(request_dict)
 
-    # sau khi lưu thành công -> tạo notification cho admin
+    # Notification to admin
     from services.notification_service import NotificationService
     from models.notification import NotificationCreate
 
     notif = NotificationCreate(
-        user_id="685630a6ee24ec3fa3dd28b8",  # TODO: bạn thay id admin thật
+        user_id="685630a6ee24ec3fa3dd28b8",  # TODO: replace with real admin ID
         title="New artist request",
-        message=f"{artist_request.name} has sent an artist request",
+        message=f"{artist_request.name} has submitted an artist request.",
         type="artist_request"
     )
     await NotificationService.create_notification(notif)
 
     request_dict["id"] = inserted_id
     return ArtistRequestInDB(**request_dict)
+
 
 @router.get("", response_model=List[ArtistRequestInDB])
 async def get_artist_requests(status: str = None, current_user: dict = Depends(get_current_admin)):

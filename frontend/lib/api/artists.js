@@ -12,13 +12,17 @@ export async function fetchArtistById(id) {
 }
 
 export async function fetchSuggestedArtists(artistId) {
-  const endpoint = "/api/artists";
-  return await apiFetch(endpoint, { fallbackOnError: [] })
-    .then(data => {
-      console.log("Raw API response for suggested artists:", data); // Debug raw data
-      const artists = Array.isArray(data.artists) ? data.artists : (Array.isArray(data) ? data : []);
-      return artists.filter(a => a.id !== artistId).slice(0, 5);
-    });
+  const data = await apiFetch("/api/artists", { fallbackOnError: [] });
+
+  const artists = Array.isArray(data?.artists)
+    ? data.artists
+    : Array.isArray(data)
+    ? data
+    : [];
+
+  return artists
+    .filter((a) => a.id !== artistId && a._id !== artistId)
+    .slice(0, 5);
 }
 
 export async function fetchArtistSuggestions(query) {
