@@ -10,7 +10,10 @@ export default async function HotAlbums() {
     <section className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-white">Hot Albums</h2>
-        <Link href="/albums" className="text-sm text-purple-400 hover:underline">
+        <Link
+          href="/viewAll/albums"
+          className="text-sm font-medium text-[#39FF14] hover:underline hover:text-white transition-colors"
+        >
           View All
         </Link>
       </div>
