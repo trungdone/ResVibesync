@@ -1,9 +1,7 @@
 {
-  "/signin/page": "app/signin/page.js",
-  "/page": "app/page.js",
-  "/role_artist/dashboard/page": "app/role_artist/dashboard/page.js",
-  "/role_artist/songs/page": "app/role_artist/songs/page.js",
-  "/role_artist/statistics/page": "app/role_artist/statistics/page.js",
+  "/viewAll/songs/page": "app/viewAll/songs/page.js",
   "/admin/albums/page": "app/admin/albums/page.js",
-  "/admin/dashboard/page": "app/admin/dashboard/page.js"
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/admin/songs/page": "app/admin/songs/page.js",
+  "/admin/artists/page": "app/admin/artists/page.js"
 }
