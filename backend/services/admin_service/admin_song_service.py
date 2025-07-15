@@ -30,6 +30,7 @@ class AdminSongService:
                 duration=song["duration"],
                 genre=song.get("genre", ""),
                 coverArt=song.get("coverArt", None),
+                lyrics_lrc=song.get("lyrics_lrc"),
                 audioUrl=song.get("audioUrl", None),
                 artistId=str(song.get("artistId", "")),
                 created_at=song["created_at"]

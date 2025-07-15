@@ -67,7 +67,7 @@ export default function NewReleases() {
             <Play size={20} />
           </button>
         </div>
-        <Link href="/new-releases" className="text-sm text-purple-400 hover:underline">
+        <Link href="/viewAll/songs" className="text-sm font-medium text-[#39FF14] hover:underline hover:text-white transition-colors">
           View All
         </Link>
       </div>

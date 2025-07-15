@@ -110,6 +110,7 @@ export default function SongForm({ song, onSubmit, onCancel }) {
         genre: song.genre || [],
         coverArt: song.coverArt || "",
         audioUrl: song.audioUrl || "",
+        lyrics_lrc: song.lyrics_lrc || "",
         artistImage: "",
       });
       setPreview({
@@ -131,22 +132,26 @@ export default function SongForm({ song, onSubmit, onCancel }) {
     }
   }, [artistData, setValue]);
 
-    // AUTO SAVE DRAFT
-  useEffect(() => {
+// AUTO SAVE DRAFT (chỉ khi đang tạo mới bài hát)
+useEffect(() => {
+  if (!song) {
     const subscription = watch((value) => {
       localStorage.setItem(
         "songFormDraft",
         JSON.stringify({
           ...value,
           genre: genres,
+          lyrics_lrc: value.lyrics_lrc || "",
         })
       );
     });
     return () => subscription.unsubscribe();
-  }, [watch, genres]);
+  }
+}, [watch, genres, song]);
 
-  // RESTORE DRAFT
-  useEffect(() => {
+// RESTORE DRAFT (chỉ áp dụng nếu đang tạo mới)
+useEffect(() => {
+  if (!song) { // chỉ khi không có song thì mới load draft
     const draft = localStorage.getItem("songFormDraft");
     if (draft) {
       try {
@@ -162,7 +167,8 @@ export default function SongForm({ song, onSubmit, onCancel }) {
         console.error("Failed to parse song draft", err);
       }
     }
-  }, [reset]);
+  }
+}, [reset, song]);
 
   const { getRootProps: getCoverProps, getInputProps: getCoverInputProps } = useDropzone({
     accept: { "image/*": [] },
@@ -473,6 +479,19 @@ export default function SongForm({ song, onSubmit, onCancel }) {
                     }}
                     className="mt-1 text-foreground bg-gray-800 border-gray-700 focus:ring-green-500 focus:border-green-500 rounded-md"
                   />
+                  {/* Nút mở folder coverArt */}
+                  <button
+                  type="button"
+                  onClick={() =>
+                  window.open(
+                  "https://console.cloudinary.com/app/c-3094a5af80706cd2033ae8d905de57/assets/media_library/folders/cbc44db855894abaca970197f69b80b93e?view_mode=list",
+                  "_blank"
+                   )
+                  }
+                  className="mt-2 inline-flex items-center text-sm text-blue-400 hover:text-blue-300"
+                  >
+                 🖼️ Browse Cloudinary CoverArt Song Folder
+                </button>
                 </div>
                 {(preview.coverArt || coverArtValue) && (
                   <div className="relative mt-1 w-fit">
@@ -482,6 +501,7 @@ export default function SongForm({ song, onSubmit, onCancel }) {
                       className="w-12 h-12 object-cover rounded-lg border border-gray-700 shadow-md"
                       onError={(e) => (e.currentTarget.src = "/placeholder.png")}
                     />
+                    
                     <button
                       type="button"
                       onClick={() => {
@@ -519,6 +539,19 @@ export default function SongForm({ song, onSubmit, onCancel }) {
                     }}
                     className="mt-1 text-foreground bg-gray-800 border-gray-700 focus:ring-green-500 focus:border-green-500 rounded-md"
                   />
+                  {/* Nút mở thư mục Cloudinary */}
+                 <button
+                type="button"
+                onClick={() =>
+                window.open(
+                "https://console.cloudinary.com/app/c-3094a5af80706cd2033ae8d905de57/assets/media_library/folders/cbc449c58509728710ec0a7ece7f60d337?view_mode=list",
+                "_blank"
+                )
+                }
+                className="mt-2 inline-flex items-center text-sm text-green-400 hover:text-green-300"
+                 >
+                🎵 Browse Cloudinary Audio Folder
+                 </button>
                 </div>
                 {(preview.audio || audioUrlValue) && (
                   <div className="mt-1">
@@ -569,6 +602,19 @@ export default function SongForm({ song, onSubmit, onCancel }) {
                     }}
                     className="mt-1 text-foreground bg-gray-800 border-gray-700 focus:ring-green-500 focus:border-green-500 rounded-md"
                   />
+                  {/* Nút mở folder coverArt artist */}
+                  <button
+                  type="button"
+                  onClick={() =>
+                  window.open(
+                  "https://console.cloudinary.com/app/c-3094a5af80706cd2033ae8d905de57/assets/media_library/folders/cbce1759a78951d1adefa4890bbb72c791?view_mode=list",
+                  "_blank"
+                   )
+                  }
+                  className="mt-2 inline-flex items-center text-sm text-blue-400 hover:text-blue-300"
+                  >
+                 🖼️ Browse Cloudinary CoverArt Artist Folder
+                </button>
                 </div>
                 {(preview.artistImage || artistImageValue) && (
                   <div className="relative mt-1 w-fit">

@@ -13,9 +13,11 @@ export default async function TopArtists() {
     <section>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-white">Top Artists</h2>
-        <Link href="/artists" className="text-sm text-purple-400 hover:underline">
+        <Link href="/viewAll/artists" className="text-sm font-medium text-[#39FF14] hover:underline hover:text-white transition-colors">
           View All
+          
         </Link>
+
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">

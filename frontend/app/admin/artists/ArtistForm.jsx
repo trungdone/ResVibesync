@@ -265,6 +265,19 @@ export function ArtistForm({ artist, onSubmit, onCancel }) {
                     setPreview(url);
                   }}
                 />
+                {/* Nút mở folder coverArt artist */}
+                  <button
+                  type="button"
+                  onClick={() =>
+                  window.open(
+                  "https://console.cloudinary.com/app/c-3094a5af80706cd2033ae8d905de57/assets/media_library/folders/cbce1759a78951d1adefa4890bbb72c791?view_mode=list",
+                  "_blank"
+                   )
+                  }
+                  className="mt-2 inline-flex items-center text-sm text-blue-400 hover:text-blue-300"
+                  >
+                 🖼️ Browse Cloudinary CoverArt Artist Folder
+                </button>
               </div>
               {(preview || imageValue) && (
                 <div className="relative mt-2 w-fit">
