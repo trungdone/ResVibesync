@@ -7,9 +7,7 @@ from services.song_service import SongService
 from database.repositories.artist_repository import ArtistRepository
 from database.repositories.song_repository import SongRepository
 
-
 # ======== Chuẩn hóa văn bản ==========
-
 def normalize_text(text: str) -> str:
     text = text.lower()
     text = unicodedata.normalize('NFD', text)
@@ -17,23 +15,17 @@ def normalize_text(text: str) -> str:
     text = re.sub(r'[^\w\s]', '', text)          # bỏ ký tự đặc biệt
     return text.strip()
 
-
 # ======== Phát hiện ngôn ngữ ==========
-
 def detect_language(text: str) -> str:
     return "en" if re.search(r'[a-zA-Z]', text) and not re.search(r'[à-ỹÀ-Ỹ]', text) else "vi"
 
-
 # ======== Khởi tạo service ==========
-
 artist_repo = ArtistRepository()
 song_repo = SongRepository()
 artist_service = ArtistService()
 song_service = SongService(song_repo, artist_repo)
 
-
 # ======== Lấy dữ liệu từ MongoDB ==========
-
 try:
     ARTISTS_DATA = artist_service.get_all_artists_simple()
 except Exception:
@@ -44,13 +36,12 @@ try:
 except Exception:
     SONGS_DATA = []
 
-
 # ======== Tạo danh sách tìm kiếm mềm ==========
-
 ARTIST_ENTRIES = [
     {
         "name": artist["name"],
         "aliases": artist.get("aliases", []),
+        "bio": artist.get("bio", ""),
         "url": f"http://localhost:3000/artist/{artist['artist_id']}",
         "keywords": [normalize_text(artist["name"])] + [normalize_text(alias) for alias in artist.get("aliases", [])],
     }
@@ -60,15 +51,16 @@ ARTIST_ENTRIES = [
 SONG_ENTRIES = [
     {
         "title": song["title"],
+        "artist": song.get("artist", ""),
+        "artistId": str(song.get("artistId", "")),
+        "releaseYear": song.get("releaseYear", ""),
         "url": f"http://localhost:3000/song/{song['song_id']}",
         "keywords": [normalize_text(song["title"])],
     }
     for song in SONGS_DATA
 ]
 
-
-# ======== Câu hỏi định nghĩa sẵn (FAQ) ==========
-
+# ======== Câu hỏi định nghĩa sẵn ==========
 CUSTOM_RESPONSES = {
     "creator": {
         "questions": [
@@ -108,46 +100,38 @@ CUSTOM_RESPONSES = {
     },
 }
 
-
 # ========== HÀM XỬ LÝ CHÍNH ==========
 
 async def handle_user_question(prompt: str) -> str:
     norm_prompt = normalize_text(prompt)
     language = detect_language(prompt)
 
-    # === 1. Trả lời nhanh theo câu hỏi định nghĩa
+    # 1. Trả lời nhanh theo câu hỏi định nghĩa
     for group in CUSTOM_RESPONSES.values():
         for question in group["questions"]:
             if normalize_text(question) in norm_prompt:
                 return group["answer_vi"] if language == "vi" else group["answer_en"]
 
-    # === 2. Nhắc người dùng nếu câu hỏi không rõ
+    # 2. Nhắc người dùng nếu không rõ
     MUSIC_KEYWORDS = [normalize_text(w) for w in ["bài hát", "ca sĩ", "nhạc", "nghệ sĩ", "song", "artist", "music"]]
     if len(norm_prompt.split()) <= 5 and not any(word in norm_prompt for word in MUSIC_KEYWORDS):
-        if language == "vi":
-            return (
-                "❗ Câu hỏi của bạn chưa rõ ràng. Vui lòng nói rõ bạn đang tìm *bài hát*, *ca sĩ*, hoặc thể loại nhạc nào 🎵.\n"
-                "Ví dụ: *'bài hát Yêu Một Người Có Lẽ'* hoặc *'ca sĩ Sơn Tùng M-TP'*."
-            )
-        else:
-            return (
-                "❗ Your question is unclear. Please specify whether you're looking for a *song*, *artist*, or *music genre* 🎵.\n"
-                "Example: *'song Love Someone Like You'* or *'artist Taylor Swift'*."
-            )
+        return (
+            "❗ Câu hỏi của bạn chưa rõ ràng. Vui lòng nói rõ bạn đang tìm *bài hát*, *ca sĩ*, hoặc thể loại nhạc nào 🎵.\n"
+            "Ví dụ: *'bài hát Yêu Một Người Có Lẽ'* hoặc *'ca sĩ Sơn Tùng M-TP'*."
+            if language == "vi" else
+            "❗ Your question is unclear. Please specify whether you're looking for a *song*, *artist*, or *music genre* 🎵.\n"
+            "Example: *'song Love Someone Like You'* or *'artist Taylor Swift'*."
+        )
 
-    # === 3. Làm rõ nếu người dùng nhập quá ngắn
+    # 3. Enrich prompt nếu quá ngắn
     enriched_prompt = prompt
     if len(prompt.split()) == 1 and " " not in prompt and not any(c in prompt for c in "?!"):
         enriched_prompt = f"bài hát {prompt}" if language == "vi" else f"song {prompt}"
 
-    # === 4. Gửi sang Gemini API
-    reply = await ask_gemini(enriched_prompt)
-    norm_reply = normalize_text(reply)
-
-    # === 5. So khớp gần đúng → tìm kết quả từ local DB
+    # 4. So khớp gần đúng
     def get_similarity(a, b):
         if b in a or a in b:
-          return 1.0
+            return 1.0
         return difflib.SequenceMatcher(None, a, b).ratio()
 
     best_entry = None
@@ -160,16 +144,74 @@ async def handle_user_question(prompt: str) -> str:
                 best_score = score
                 best_entry = entry
 
-    # === 6. Trả kết quả nếu trùng
+    # 5. Nếu khớp dữ liệu nghệ sĩ hoặc bài hát
     if best_entry and best_score >= 0.6:
-        name = best_entry.get("name") or best_entry.get("title") or "Xem thêm"
-        reply += f"\n\n👉 Bạn có thể xem thêm về: [{name}]({best_entry['url']})"
-    else:
-        reply += (
-            "\n\n❗ Website của chúng tôi chuyên về âm nhạc. "
-            "Vui lòng đặt câu hỏi liên quan đến playlist, ca sĩ, thể loại nhạc hoặc bài hát bạn muốn nghe 🎵."
-            if language == "vi" else
-            "\n\n❗ Our website focuses on music. Please ask questions about playlists, artists, genres, or songs you want to hear 🎵."
-        )
+        name = best_entry.get("name") or best_entry.get("title")
+        extra_info = ""
+        artist_name = ""
+        artist_bio = ""
+        release_year = ""
 
+        if "bio" in best_entry:  # Entry là nghệ sĩ
+            artist_name = best_entry["name"]
+            artist_bio = best_entry.get("bio", "").strip()
+
+            extra_info = (
+                f"Giới thiệu về nghệ sĩ {artist_name}.\nĐây là mô tả của họ: {artist_bio}"
+                if language == "vi" and artist_bio else
+                f"Giới thiệu về nghệ sĩ {artist_name}."
+                if language == "vi" else
+                f"Introduce the artist {artist_name}.\nHere is their bio: {artist_bio}"
+                if artist_bio else
+                f"Introduce the artist {artist_name}."
+            )
+
+        elif "title" in best_entry:  # Entry là bài hát
+            song_title = best_entry.get("title", "bài hát không rõ")
+            artist_name = best_entry.get("artist", "").strip()
+            artist_bio = ""
+            release_year = best_entry.get("releaseYear", "")
+
+            for a in ARTISTS_DATA:
+                if a["name"].lower() == artist_name.lower() or str(a["artist_id"]) == best_entry.get("artistId", ""):
+                    artist_bio = a.get("bio", "").strip()
+                    break
+
+            if artist_name:
+                if artist_bio:
+                    extra_info = (
+                        f"Hãy giới thiệu bài hát '{song_title}' của ca sĩ {artist_name} phát hành năm {release_year}.\n"
+                        f"Thông tin nghệ sĩ: {artist_bio}"
+                        if language == "vi" else
+                        f"Describe in detail the song '{song_title}' by artist {artist_name}, released in {release_year}.\n"
+                        f"Artist bio: {artist_bio}"
+                    )
+                else:
+                    extra_info = (
+                        f"Hãy giới thiệu bài hát '{song_title}' của ca sĩ {artist_name} phát hành năm {release_year}."
+                        if language == "vi" else
+                        f"Describe in detail the song '{song_title}' by artist {artist_name}, released in {release_year}."
+                    )
+            else:
+                extra_info = (
+                    f"Hãy mô tả bài hát '{song_title}'."
+                    if language == "vi" else
+                    f"Describe the song '{song_title}'."
+                )
+
+        enriched_prompt = extra_info
+        reply = await ask_gemini(enriched_prompt)
+        reply += f"\n\n👉 Bạn có thể xem thêm về: [{name}]({best_entry['url']})"
+        return reply
+
+    # 6. Nếu không khớp gì → gửi prompt gốc
+    reply = await ask_gemini(enriched_prompt)
+    reply += (
+        "\n\n❗ Website của chúng tôi chuyên về âm nhạc. "
+        "Vui lòng đặt câu hỏi liên quan đến playlist, ca sĩ, thể loại nhạc hoặc bài hát bạn muốn nghe 🎵."
+        if language == "vi" else
+        "\n\n❗ Our website focuses on music. Please ask questions about playlists, artists, genres, or songs you want to hear 🎵."
+    )
     return reply
+
+

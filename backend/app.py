@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
+
 # Load biến môi trường
 load_dotenv()
 
@@ -22,6 +23,7 @@ from routes import (
 from routes.admin_routes.song_admin_routes import router as admin_song_router
 from routes.admin_routes.admin_artist_routes import router as admin_artist_router
 from routes.admin_routes.admin_album_routes import router as admin_album_router
+
 
 
 

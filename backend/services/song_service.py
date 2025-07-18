@@ -1,7 +1,7 @@
 from database.db import artists_collection
 from bson import ObjectId
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 from models.song import SongCreate, SongUpdate, SongInDB
 from database.repositories.song_repository import SongRepository
 from database.repositories.artist_repository import ArtistRepository
@@ -86,18 +86,22 @@ class SongService:
     
 
     # services/song_service.py
-    def get_all_songs_simple(self):
-     try:
-        songs = self.song_repository.find_all()
-        return [
-            {
-                "title": song.get("title", ""),
-                "song_id": str(song["_id"]),
-            }
-            for song in songs
-        ]
-     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi lấy bài hát: {str(e)}")
+    def get_all_songs_simple(self) -> List[Dict]:
+        try:
+            raw_songs = self.song_repository.get_all_songs_simple()
+            return [
+                {
+                    "title": song.get("title", ""),
+                    "song_id": str(song.get("_id", "")),
+                    "artist": song.get("artist", ""),
+                    "artistId": str(song.get("artistId", "")),
+                    "releaseYear": song.get("releaseYear", "")
+                }
+                for song in raw_songs
+            ]
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Lỗi lấy bài hát: {str(e)}")
+
 
 
     

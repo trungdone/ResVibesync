@@ -76,3 +76,20 @@ class SongRepository:
             ]
         })
         return result.deleted_count > 0
+    
+
+    @staticmethod
+    def get_all_songs_simple() -> List[Dict]:
+        try:
+            # Truy vấn chỉ các trường đơn giản cần cho tìm kiếm
+            songs = songs_collection.find({}, {
+                "_id": 1,
+                "title": 1,
+                "artist": 1,
+                "artistId": 1,
+                "releaseYear": 1
+            })
+            return list(songs)
+        except Exception as e:
+            print(f"Error in get_all_songs_simple: {str(e)}")
+            return []

@@ -9,10 +9,11 @@ const MusicContext = createContext();
 export function MusicProvider({ children }) {
   const [songs, setSongs] = useState([]);
   const [currentSong, setCurrentSong] = useState(null);
+  const [currentSongId, setCurrentSongId] = useState(null); // ✅ thêm biến này
   const [isPlaying, setIsPlaying] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
-  const [repeatMode, setRepeatMode] = useState(0); // 0: off, 1: repeat one, 2: repeat all
-  const [context, setContext] = useState("new-releases"); // playlist | album | artist
+  const [repeatMode, setRepeatMode] = useState(0);
+  const [context, setContext] = useState("new-releases");
   const [contextId, setContextId] = useState(null);
   const audioRef = useRef(typeof Audio !== "undefined" ? new Audio() : null);
 
@@ -22,6 +23,7 @@ export function MusicProvider({ children }) {
       audioRef.current.currentTime = 0;
     }
     setCurrentSong(null);
+    setCurrentSongId(null); // ✅ reset ID
     setIsPlaying(false);
   };
 
@@ -105,10 +107,12 @@ export function MusicProvider({ children }) {
 
   const playSong = (song) => {
     if (!song || !song.audioUrl) return;
-    setCurrentSong({
+    const normalized = {
       ...song,
-      id: song._id || song.id, // normalize id
-    });
+      id: song._id || song.id,
+    };
+    setCurrentSong(normalized);
+    setCurrentSongId(normalized.id); // ✅ cập nhật ID mỗi khi đổi bài
     setIsPlaying(true);
   };
 
@@ -197,6 +201,7 @@ export function MusicProvider({ children }) {
       value={{
         songs,
         currentSong,
+        currentSongId, // ✅ chia sẻ ra context
         isPlaying,
         isShuffling,
         repeatMode,

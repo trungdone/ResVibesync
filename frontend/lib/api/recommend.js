@@ -1,6 +1,6 @@
 // File: lib/api/recommend.js
 
-export async function fetchRecommendations(userId, limit = 12) {
+export async function fetchRecommendations(userId, limit = 30) {
   if (!userId) throw new Error("User ID is required for recommendations");
 
   try {
