@@ -59,6 +59,18 @@ export function AuthProvider({ children }) {
     
   };
 
+
+  const refreshUser = async () => {
+  const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        await verifyToken(token); // this will update the context
+      } catch {
+        clearAuthStorage();
+      }
+    }
+  };
+
   const signIn = async (email, password) => {
     try {
       setLoading(true);
@@ -150,7 +162,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, signIn, signUp, signOut,refreshUser   }}>
       {children}
     </AuthContext.Provider>
   );

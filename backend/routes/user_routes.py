@@ -8,6 +8,13 @@ from services.song_service import SongService
 from database.repositories.song_repository import SongRepository
 from database.repositories.artist_repository import ArtistRepository
 from auth import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+from fastapi import Body
+from fastapi import UploadFile, File
+from utils.cloudinary_upload import upload_image 
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 router = APIRouter(tags=["user"])
 
@@ -132,3 +139,73 @@ def get_liked_songs(current_user: dict = Depends(get_current_user)):
     # Lọc bỏ những bài hát None (không còn tồn tại)
     songs = [s for s in songs if s]
     return {"liked": songs}
+
+@router.post("/change-password")
+def change_password(
+    old_password: str = Body(...),
+    new_password: str = Body(...),
+    current_user: dict = Depends(get_current_user)
+):
+    user = UserService.get_user_by_id(current_user["id"])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not pwd_context.verify(old_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect old password")
+
+    hashed_new = pwd_context.hash(new_password)
+    UserService.update_password(user.id, hashed_new)
+    return {"message": "Password updated successfully"}
+
+
+@router.patch("/user/update-name")
+async def update_user_name(
+    name: str = Body(..., embed=True),
+    current_user: dict = Depends(get_current_user),
+):
+    updated_user = UserService.update_user_name(current_user["id"], name)
+    return updated_user
+
+
+
+from fastapi import UploadFile, File, Depends, HTTPException
+import os, tempfile
+from utils.cloudinary_upload import upload_image, CLOUDINARY_BASE_URL
+from auth import get_current_user
+from database.db import db
+
+
+ALLOWED_EXTENSIONS = [".jpg", ".jpeg"]
+MAX_FILE_SIZE_MB = 5
+
+@router.post("/avatar")
+async def upload_user_avatar(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Only JPG/JPEG images are allowed.")
+
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 5MB.")
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+        tmp.write(contents)
+        temp_path = tmp.name
+
+    try:
+        result = upload_image(temp_path)
+
+        public_url = result.get("secure_url")
+        if not public_url:
+            raise HTTPException(status_code=500, detail="Cloudinary did not return a URL")
+
+        UserService.update_user_with_dict(current_user["id"], {"avatar": public_url})
+
+        return {"avatar": public_url}
+
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
