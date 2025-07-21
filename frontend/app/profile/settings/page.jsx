@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Music, UploadCloud } from "lucide-react"
 import axios from "axios"
 import { useAuth } from "@/context/auth-context";
-
+import Footer from "@/components/layout/footer"
 
 const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/<your_cloud_name>/"
 
@@ -250,8 +250,9 @@ export default function ProfileAccountSetting() {
             </form>
         </div>
         </div>
+              <Footer />
+
     </div>
     )
-
   
-}
+};

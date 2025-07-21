@@ -6,6 +6,7 @@ import SongList from "@/components/songs/song-list";
 import { getPlaylistById } from "@/lib/api/playlists";
 import { getSongById } from "@/lib/api/songs";
 import { Heart, MoreHorizontal, Play } from "lucide-react";
+import Footer from "@/components/layout/footer"
 
 export default function PlaylistPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
@@ -124,6 +125,8 @@ export default function PlaylistPage({ params: paramsPromise }) {
       </div>
 
       <SongList songs={validSongs} />
+      <Footer />
+      
     </div>
   );
 }

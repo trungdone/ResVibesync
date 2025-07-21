@@ -1,4 +1,4 @@
-// File: D:\daMusic003\codeDemoAsm 03\ResVibesync\frontend\app\layout.jsx
+// File: D:\Class-Fpt\Last Chistmas\Code\Resync main\ResVibesync\frontend\app\layout.jsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
