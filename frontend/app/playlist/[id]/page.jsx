@@ -7,6 +7,11 @@ import { getPlaylistById } from "@/lib/api/playlists";
 import { getSongById } from "@/lib/api/songs";
 import { Heart, MoreHorizontal, Play } from "lucide-react";
 import Footer from "@/components/layout/footer"
+import PlaylistModal from "@/components/playlist/PlaylistModal";
+import { useRouter } from "next/navigation";
+import { deletePlaylist } from "@/lib/api/playlists";
+import { triggerPlaylistRefresh } from "@/lib/api/playlist-refresh";
+
 
 export default function PlaylistPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
@@ -16,31 +21,60 @@ export default function PlaylistPage({ params: paramsPromise }) {
   const [validSongs, setValidSongs] = useState([]);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
+  const router = useRouter();
 
-  useEffect(() => {
-    const fetchPlaylist = async () => {
-      if (!id || typeof id !== "string") return notFound();
 
-      const playlistData = await getPlaylistById(id);
-      if (!playlistData) return notFound();
+  const [editingPlaylist, setEditingPlaylist] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
-      setPlaylist(playlistData);
 
-      // Fetch song details
-      if (Array.isArray(playlistData.songIds)) {
-        try {
-          const songs = await Promise.all(
-            playlistData.songIds.map((songId) => getSongById(songId))
-          );
-          setValidSongs(songs.filter(Boolean));
-        } catch (err) {
-          console.error("Failed to fetch songs:", err);
-        }
-      }
-    };
+  const handleEditPlaylist = (playlist) => {
+  setShowMenu(false);              // Hide the dropdown
+  setEditingPlaylist(playlist);   // Set the playlist to edit
+  setShowEditModal(true);         // Show the modal
+  };
 
-    fetchPlaylist();
-  }, [id]);
+  const handleDeletePlaylist = async () => {
+    const confirmed = confirm("Are you sure you want to delete this playlist?");
+    if (!confirmed) return;
+
+    try {
+      await deletePlaylist(playlist.id);
+      triggerPlaylistRefresh(); // ✅ Refresh the sidebar
+      router.push("/library");
+    } catch (err) {
+      console.error("Failed to delete playlist:", err);
+      alert("Failed to delete playlist.");
+    }
+  };
+
+
+
+
+  const fetchPlaylist = async () => {
+  if (!id || typeof id !== "string") return notFound();
+
+  const playlistData = await getPlaylistById(id);
+  if (!playlistData) return notFound();
+
+  setPlaylist(playlistData);
+
+  if (Array.isArray(playlistData.songIds)) {
+    try {
+      const songs = await Promise.all(
+        playlistData.songIds.map((songId) => getSongById(songId))
+      );
+      setValidSongs(songs.filter(Boolean));
+    } catch (err) {
+      console.error("Failed to fetch songs:", err);
+    }
+  }
+};
+
+useEffect(() => {
+  fetchPlaylist();
+}, [id]);
+
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -107,13 +141,20 @@ export default function PlaylistPage({ params: paramsPromise }) {
               {showMenu && (
                 <div className="absolute right-0 mt-2 w-44 bg-black border border-purple-700 text-white rounded shadow-lg z-50">
                   <ul className="text-sm">
-                    <li className="px-4 py-2 hover:bg-purple-700 cursor-pointer">
+                    <li
+                      className="px-4 py-2 hover:bg-purple-700 cursor-pointer"
+                      onClick={() => handleEditPlaylist(playlist)}
+                    >
                       Edit Playlist
                     </li>
+
+
+
                     <li className="px-4 py-2 hover:bg-purple-700 cursor-pointer">
                       Share
                     </li>
-                    <li className="px-4 py-2 hover:bg-purple-700 cursor-pointer">
+                    <li className="px-4 py-2 hover:bg-purple-700 cursor-pointer"
+                      onClick={handleDeletePlaylist} >
                       Delete
                     </li>
                   </ul>
@@ -121,6 +162,23 @@ export default function PlaylistPage({ params: paramsPromise }) {
               )}
             </div>
           </div>
+
+          {showEditModal && (
+            <PlaylistModal
+              open={showEditModal}
+              onClose={() => {
+                setShowEditModal(false);
+                setEditingPlaylist(null);
+              }}
+              editingPlaylist={editingPlaylist}
+              onSuccess={async () => {
+                await fetchPlaylist(); // ✅ refresh UI
+                setShowEditModal(false);
+                setEditingPlaylist(null);
+              }}
+            />
+          )}
+
         </div>
       </div>
 
