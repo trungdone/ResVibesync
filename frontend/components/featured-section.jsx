@@ -6,7 +6,6 @@ import { Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { fetchTopSongs } from "@/lib/api/songs";
 
-// Mảng ảnh theo thời điểm
 const backgroundImages = [
   { time: "7AM", src: "/7am.jpg" },
   { time: "12PM", src: "/12pm.jpg" },
@@ -22,57 +21,72 @@ export default function FeaturedSection() {
     if (hour >= 12 && hour < 18) return 1;
     return 2;
   });
-
-  // Xử lý nút chuyển ảnh
-  const handlePrev = () => setBgIndex((prev) => (prev - 1 + backgroundImages.length) % backgroundImages.length);
-  const handleNext = () => setBgIndex((prev) => (prev + 1) % backgroundImages.length);
+  const [songIndex, setSongIndex] = useState(0);
 
   const featuredBg = backgroundImages[bgIndex].src;
 
-  // Load bài hát
+  const handlePrev = () => setBgIndex((prev) => (prev - 1 + backgroundImages.length) % backgroundImages.length);
+  const handleNext = () => setBgIndex((prev) => (prev + 1) % backgroundImages.length);
+
+  const handleSongPrev = () => {
+    const newIndex = (songIndex - 1 + songs.length) % songs.length;
+    setSongIndex(newIndex);
+    setFeatured(songs[newIndex]);
+  };
+
+  const handleSongNext = () => {
+    const newIndex = (songIndex + 1) % songs.length;
+    setSongIndex(newIndex);
+    setFeatured(songs[newIndex]);
+  };
+
   useEffect(() => {
     async function loadSongs() {
       const topSongs = await fetchTopSongs(20);
       const validSongs = topSongs.filter((song) => song.coverArt?.startsWith("http"));
       setSongs(validSongs);
       if (validSongs.length > 0) {
-        const random = validSongs[Math.floor(Math.random() * validSongs.length)];
-        setFeatured(random);
+        const randomIndex = Math.floor(Math.random() * validSongs.length);
+        setFeatured(validSongs[randomIndex]);
+        setSongIndex(randomIndex);
       }
     }
     loadSongs();
   }, []);
 
-  // Đổi bài hát mỗi 60s
   useEffect(() => {
     if (!songs.length) return;
     const interval = setInterval(() => {
-      const random = songs[Math.floor(Math.random() * songs.length)];
-      setFeatured(random);
-    }, 60000);
+      const newIndex = Math.floor(Math.random() * songs.length);
+      setFeatured(songs[newIndex]);
+      setSongIndex(newIndex);
+    }, 5000);
     return () => clearInterval(interval);
   }, [songs]);
 
   if (!featured) return null;
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto h-[340px] md:h-[400px] lg:h-[450px] rounded-2xl overflow-hidden shadow-xl ring-1 ring-purple-700/30 group transition-all duration-500 hover:ring-4 hover:ring-purple-500/50 hover:shadow-2xl">
-      
-      {/* Ảnh nền có hiệu ứng hover */}
+    <div className="relative w-full mx-0 h-[340px] md:h-[400px] lg:h-[450px] rounded-2xl overflow-hidden shadow-xl ring-1 ring-purple-700/30 group transition-all duration-500 hover:ring-4 hover:ring-purple-500/50 hover:shadow-2xl">
+
+      {/* Background */}
       <div className="absolute inset-0 transition-all duration-700 ease-in-out group-hover:scale-105 group-hover:brightness-110">
-        <Image
-          src={featuredBg}
-          alt="Background"
-          fill
-          priority
-          className="object-cover"
-        />
+        <Image src={featuredBg} alt="Background" fill priority className="object-cover" />
       </div>
 
-      {/* Overlay đen để chữ nổi bật */}
-      <div className="absolute inset-0 bg-black/60 z-10" />
+      <div className="absolute inset-0 bg-black/60" />
 
-      {/* Nút chuyển trái/phải */}
+      {/* Dot Indicators */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1">
+        {backgroundImages.map((_, idx) => (
+          <span
+            key={idx}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === bgIndex ? "bg-white" : "bg-white/40"}`}
+          />
+        ))}
+      </div>
+
+      {/* Background Switch */}
       <button
         onClick={handlePrev}
         className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-white/10 hover:bg-white/20 text-white p-2 rounded-full"
@@ -86,20 +100,33 @@ export default function FeaturedSection() {
         <ChevronRight size={24} />
       </button>
 
-      {/* Nội dung bài hát */}
-      <div className="relative z-20 h-full flex flex-col md:flex-row items-center justify-between p-6 md:p-10 gap-6">
-        {/* Ảnh bài hát */}
-        <div className="w-[160px] h-[160px] rounded-xl overflow-hidden ring-2 ring-purple-600 shadow-md hover:ring-4 hover:ring-purple-400 transition-all duration-300">
-          <Image
-            src={featured.coverArt}
-            alt={featured.title}
-            width={160}
-            height={160}
-            className="object-cover w-full h-full"
-          />
-        </div>
+      {/* Content */}
+      <div className="relative h-full flex flex-col md:flex-row items-center justify-between p-6 md:p-10 gap-6">
+      <div className="w-[300px] h-[300px] rounded-2xl overflow-hidden ring-2 ring-purple-600 shadow-md hover:ring-4 hover:ring-purple-400 transition-all duration-300 relative">
+      <Image
+       src={featured.coverArt}
+       alt={featured.title}
+       width={300}
+       height={300}
+       className="object-cover w-full h-full"
+      />
 
-        {/* Văn bản */}
+     {/* Song Controls */}
+     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-3">
+      <button
+      onClick={handleSongPrev}
+      className="bg-white/20 hover:bg-white/40 p-1 rounded-full text-white"
+      >
+      <ChevronLeft size={16} />
+      </button>
+      <button
+      onClick={handleSongNext}
+      className="bg-white/20 hover:bg-white/40 p-1 rounded-full text-white"
+      >
+      <ChevronRight size={16} />
+     </button>
+     </div>
+     </div>
         <div className="flex-1 text-white">
           <h2 className="text-purple-400 text-sm uppercase mb-1">Featured Song</h2>
           <h1 className="text-3xl md:text-4xl font-bold mb-3">{featured.title}</h1>

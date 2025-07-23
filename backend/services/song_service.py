@@ -83,3 +83,8 @@ class SongService:
     def delete_song(self, song_id: str) -> bool:
         return self.song_repository.delete(song_id)
     
+    def get_songs_by_genre(self, genre: str, page: int = 1, limit: int = 50) -> List[SongInDB]:
+      if not genre:
+        raise ValueError("Genre is required")
+      songs = self.song_repository.find_by_genre(genre, page, limit)
+      return [self._map_to_song_in_db(song) for song in songs]

@@ -117,4 +117,18 @@ class SongRepository:
             print(f"Error in find_by_ids: {e}")
             raise ValueError("Failed to find songs by IDs")
    
+    @staticmethod
+    def find_by_genre(genre: str, page: int = 1, limit: int = 50) -> List[Dict]:
+      try:
+        # Tách genre nếu có dạng "Genre1 and Genre2"
+        genres = [g.strip() for g in genre.split(" and ")] if " and " in genre else [genre]
+        query = {"genre": {"$all": genres}} if genres else {}
+        print(f"Querying database with: {query}")
+        cursor = songs_collection.find(query).skip((page - 1) * limit).limit(limit)
+        songs = list(cursor)
+        print(f"Found {len(songs)} songs for genre '{genre}' (page={page}, limit={limit})")
+        return songs
+      except Exception as e:
+        print(f"Error in find_by_genre: {str(e)}")
+        raise ValueError(f"Failed to query songs by genre: {str(e)}")
     
