@@ -1,58 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import { Play, Heart } from "lucide-react";
+import { Play } from "lucide-react";
 import { useMusic } from "@/context/music-context";
 import axios from "@/lib/axiosInstance";
 import WaveBars from "@/components/ui/WaveBars";
 
 export default function PlayArtistButton({ artistId }) {
   const { currentSong, isPlaying, setSongs, playSong, setContext, setContextId } = useMusic();
-  const [liked, setLiked] = useState(false);
 
-  // ✅ Đảm bảo đúng bài đang phát của artist
+  // ✅ Kiểm tra đúng bài của nghệ sĩ đang phát
   const isThisArtistPlaying = isPlaying && currentSong?.artist_id === artistId;
 
-const handlePlay = async (e) => {
-  e.stopPropagation();
-
-  try {
-    const res = await axios.get(`/api/artists/${artistId}/songs`);
-    const songs = res.data?.songs || [];
-
-    if (songs.length > 0) {
-      const songsWithContext = songs.map((s) => ({
-        ...s,
-        artist_id: artistId, // để phân biệt trong `isThisArtistPlaying`
-      }));
-
-      setSongs(songsWithContext); // ✅ Đặt trước
-      setContext("artist");
-      setContextId(artistId);
-      playSong(songsWithContext[0]);
-    }
-  } catch (err) {
-    console.error("❌ Failed to play artist:", err);
-  }
-};
-
-
-
-  const toggleLike = (e) => {
+  const handlePlay = async (e) => {
     e.stopPropagation();
-    setLiked(!liked);
+
+    try {
+      const res = await axios.get(`/api/artists/${artistId}/songs`);
+      const songs = res.data?.songs || [];
+
+      if (songs.length > 0) {
+        const songsWithContext = songs.map((s) => ({
+          ...s,
+          artist_id: artistId,
+        }));
+
+        setSongs(songsWithContext);
+        setContext("artist");
+        setContextId(artistId);
+        playSong(songsWithContext[0]);
+      }
+    } catch (err) {
+      console.error("❌ Failed to play artist:", err);
+    }
   };
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-black/30 pointer-events-none">
-      {/* ❤️ Like button */}
-      <button
-        onClick={toggleLike}
-        className="pointer-events-auto bg-black/70 hover:bg-black text-white rounded-full p-2"
-      >
-        <Heart className={`w-5 h-5 ${liked ? "fill-red-500 text-red-500" : ""}`} />
-      </button>
-
+    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-black/30 pointer-events-none">
       {/* ▶️ Play / WaveBars */}
       <button
         onClick={handlePlay}

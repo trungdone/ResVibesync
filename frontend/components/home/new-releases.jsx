@@ -56,7 +56,12 @@ export default function NewReleases() {
     <section>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold">New Releases</h2>
+          <Link
+            href="/viewAll/songs"
+            className="text-2xl font-bold hover:text-purple-600 transition-colors"
+          >
+            New Releases
+          </Link>
           <button
             onClick={handlePlayAll}
             title="Play All"
@@ -67,7 +72,10 @@ export default function NewReleases() {
             <Play size={20} />
           </button>
         </div>
-        <Link href="/viewAll/songs" className="text-sm font-medium text-[#39FF14] hover:underline hover:text-white transition-colors">
+        <Link
+          href="/viewAll/songs"
+          className="text-sm font-medium text-white hover:text-purple-600 transition-colors"
+        >
           View All
         </Link>
       </div>

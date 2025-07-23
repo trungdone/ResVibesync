@@ -1,3 +1,4 @@
+# ✅ FILE: models/song.py
 from pydantic import BaseModel, validator, HttpUrl
 from datetime import datetime
 from typing import Optional, List
@@ -46,8 +47,9 @@ class SongInDB(SongBase):
     id: str
     created_at: datetime
     updated_at: Optional[datetime] = None
-    lyrics_lrc: Optional[str] = None
 
     class Config:
+        allow_population_by_field_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
+        fields = {"id": "_id"}  # Map _id từ Mongo sang id

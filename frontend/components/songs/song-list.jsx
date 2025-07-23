@@ -9,10 +9,18 @@ import { formatDuration } from "@/lib/utils";
 import WaveBars from "@/components/ui/WaveBars";
 import SongActionsMenu from "./song-actions-menu";
 
-
 export default function SongList({ songs: propSongs }) {
-  const { playSong, isPlaying, currentSong, togglePlayPause, nextSong,  setSongs,
-  setContext,setContextId } = useMusic();
+  const {
+    playSong,
+    isPlaying,
+    currentSong,
+    togglePlayPause,
+    nextSong,
+    setSongs,
+    setContext,
+    setContextId,
+  } = useMusic();
+
   const [optionsOpenId, setOptionsOpenId] = useState(null);
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
   const [likedSongs, setLikedSongs] = useState(new Set());
@@ -22,20 +30,18 @@ export default function SongList({ songs: propSongs }) {
   const scrollRef = useRef(null);
   const scrollTimeoutRef = useRef(null);
 
-const handlePlayClick = (song) => {
-  if (!song) return;
+  const handlePlayClick = (song) => {
+    if (!song) return;
 
-  // Nếu đang phát bài đó thì toggle play/pause
-  if (currentSong?.id?.toString() === song.id?.toString()) {
-    togglePlayPause();
-  } else {
-    // Gán toàn bộ danh sách hiện tại làm context
-    setSongs(propSongs);
-    setContext("new-releases"); 
-    setContextId(null); 
-    playSong(song); 
-  }
-};
+    if (currentSong?.id?.toString() === song.id?.toString()) {
+      togglePlayPause();
+    } else {
+      setSongs(propSongs);
+      setContext("region"); // 👉 Đặt context là region (hoặc đặt tên rõ ràng hơn nếu muốn)
+      setContextId(null);
+      playSong(song);
+    }
+  };
 
   const toggleLike = (songId) => {
     const updated = new Set(likedSongs);
@@ -87,7 +93,7 @@ const handlePlayClick = (song) => {
   };
 
   const handleBlock = () => {
-    console.log(`Block song ${optionsOpenId}`);
+    console.log(`Blocked song ${optionsOpenId}`);
     setOptionsOpenId(null);
   };
 
@@ -101,7 +107,7 @@ const handlePlayClick = (song) => {
   };
 
   return (
-    <div className="bg-zinc-900 shadow-md rounded-xl overflow-hidden relative border border-zinc-700">
+    <div className="shadow-md rounded-xl overflow-hidden relative border border-zinc-700 transition-shadow duration-300">
       <div
         ref={scrollRef}
         className="max-h-[360px] overflow-y-auto scroll-container transition-all duration-300 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900"
@@ -114,8 +120,8 @@ const handlePlayClick = (song) => {
         }}
       >
         <table className="w-full text-sm text-left">
-          <thead className="sticky top-0 bg-zinc-800 z-10">
-            <tr className="border-b border-zinc-700 text-gray-200 uppercase">
+          <thead className="sticky top-0 bg-zinc-700 z-10">
+            <tr className="border-b border-zinc-700 text-white uppercase">
               <th className="p-3 w-10 font-medium">#</th>
               <th className="p-3 font-medium">Title</th>
               <th className="p-3 font-medium hidden md:table-cell">Album</th>
@@ -131,67 +137,61 @@ const handlePlayClick = (song) => {
               return (
                 <tr
                   key={song.id}
-                  className={`group border-b border-zinc-700 hover:bg-zinc-800 transition ${
-                    isCurrent ? "bg-zinc-800" : ""
+                  className={`group border-b border-zinc-700 hover:bg-purple-600/30 transition ${
+                    isCurrent ? "bg-zinc-600" : ""
                   }`}
                 >
-                  <td className="p-3 text-gray-400">
+                  <td className="p-3 text-gray-200 relative">
                     <div className="w-6 h-6 flex items-center justify-center relative">
-                      {isCurrent && isPlaying ? (
-                        <WaveBars />
+                      {!isCurrent || !isPlaying ? (
+                        <span className="transition-opacity duration-300 group-hover:opacity-0">{index + 1}</span>
                       ) : (
-                        <>
-                          <span className="group-hover:opacity-0">{index + 1}</span>
-                          <button
-                            onClick={() => handlePlayClick(song)}
-                            className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center"
-                          >
-                            <Play size={16} className="text-white" />
-                          </button>
-                        </>
+                        <WaveBars className="text-purple-400" />
                       )}
+                      <button
+                        onClick={() => handlePlayClick(song)}
+                        className="absolute inset-0 flex items-center justify-center text-white hover:text-purple-300 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Play size={16} />
+                      </button>
                     </div>
                   </td>
-                  <td className="p-3">
+                  <td className="p-3 hover:scale-105 origin-center transition-transform duration-300">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0 relative">
                         <Image
                           src={song.coverArt || "/placeholder.svg"}
                           alt={song.title || "Cover"}
                           fill
-                          className={`object-cover ${
-                            isCurrent && isPlaying ? "animate-pulse" : ""
-                          }`}
+                          className={`object-cover ${isCurrent && isPlaying ? "animate-pulse" : ""}`}
                         />
                       </div>
                       <div>
-                        <Link href={`/song/${song.id}`} className="text-gray-100 font-medium hover:underline">
+                        <Link href={`/song/${song.id}`} className="text-white font-medium hover:underline">
                           {song.title}
                         </Link>
-                        <div className="text-sm text-gray-400">{song.artist}</div>
+                        <div className="text-gray-200 text-sm">{song.artist}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="p-3 text-gray-400 hidden md:table-cell">
+                  <td className="p-3 text-gray-200 hidden md:table-cell hover:scale-105 origin-center transition-transform duration-300">
                     {song.album || "N/A"}
                   </td>
-                  <td className="p-3 text-gray-400 hidden md:table-cell">
+                  <td className="p-3 text-gray-200 hidden md:table-cell hover:scale-105 origin-center transition-transform duration-300">
                     {formatDuration(song.duration || 0)}
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => toggleLike(song.id)}
-                        className={`hover:text-white ${
-                          isLiked ? "text-pink-500" : "text-gray-400"
-                        }`}
+                        className={`hover:text-white ${isLiked ? "text-pink-500" : "text-gray-200"}`}
                       >
                         <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
                       </button>
                       <button
                         ref={(el) => (moreBtnRefs.current[song.id] = el)}
                         onClick={() => toggleOptions(song.id)}
-                        className="text-gray-400 hover:text-white"
+                        className="text-gray-200 hover:text-white"
                       >
                         <MoreHorizontal size={18} />
                       </button>
@@ -204,7 +204,6 @@ const handlePlayClick = (song) => {
         </table>
       </div>
 
-      {/* Popup menu */}
       {optionsOpenId && (
         <div
           ref={popupRef}
@@ -221,14 +220,14 @@ const handlePlayClick = (song) => {
               />
             </div>
             <div className="flex-1">
-              <div className="font-semibold text-base truncate">
+              <div className="font-semibold text-base truncate text-white">
                 {propSongs.find((s) => s.id === optionsOpenId)?.title}
               </div>
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-gray-200">
                 {propSongs.find((s) => s.id === optionsOpenId)?.artist}
               </div>
             </div>
-            <button onClick={() => setOptionsOpenId(null)} className="text-gray-400 hover:text-white">
+            <button onClick={() => setOptionsOpenId(null)} className="text-gray-200 hover:text-white">
               <X size={16} />
             </button>
           </div>
@@ -239,10 +238,18 @@ const handlePlayClick = (song) => {
               onClose={() => setOptionsOpenId(null)}
             />
             <ul className="text-sm mt-2 space-y-2">
-              <li onClick={handleLyrics} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Lyrics</li>
-              <li onClick={handlePlayNext} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Play Next</li>
-              <li onClick={handleBlock} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Block</li>
-              <li onClick={handleCopyLink} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Copy Link</li>
+              <li onClick={handleLyrics} className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white">
+                Lyrics
+              </li>
+              <li onClick={handlePlayNext} className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white">
+                Play Next
+              </li>
+              <li onClick={handleBlock} className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white">
+                Block
+              </li>
+              <li onClick={handleCopyLink} className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white">
+                Copy Link
+              </li>
             </ul>
           </div>
         </div>

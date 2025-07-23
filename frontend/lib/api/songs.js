@@ -1,32 +1,46 @@
 // lib/api/songs.js
 import { apiFetch } from "../utils";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
+
+// 🔹 Hàm hỗ trợ xây query string
+function buildQuery(params = {}) {
+  return new URLSearchParams(params).toString();
+}
+
+// 🔹 Lấy tất cả bài hát (có thể thêm { region: "vietnamese", noCache: true })
 export async function fetchSongs(params = {}) {
-  const query = new URLSearchParams(params).toString();
+  const { noCache, ...restParams } = params;
+  const query = buildQuery(restParams);
   const endpoint = `/api/songs${query ? `?${query}` : ""}`;
-  const data = await apiFetch(endpoint, { fallbackOnError: { songs: [] } });
-  return data.songs || []; // Trả về mảng songs từ object, hoặc mảng rỗng nếu không có
+  return await apiFetch(endpoint, {
+    fallbackOnError: { songs: [] },
+    cache: noCache ? "no-store" : undefined,
+  }).then(data => data.songs || []);
 }
 
-export async function fetchSongById(id) {
+// 🔹 Lấy 1 bài hát theo ID
+export async function fetchSongById(id, noCache = false) {
   const endpoint = `/api/songs/${id}`;
-  return await apiFetch(endpoint);
+  return await apiFetch(endpoint, {
+    cache: noCache ? "no-store" : undefined,
+  });
 }
 
+// 🔹 Lấy nhiều bài hát theo danh sách ID
 export async function fetchSongsByIds(songIds) {
   const promises = songIds.map((id) => apiFetch(`/api/songs/${id}`));
   return await Promise.all(promises);
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
-
+// 🔹 Lấy 1 bài hát từ API gốc (FastAPI)
 export async function getSongById(id) {
   const res = await fetch(`${API_BASE}/songs/${id}`, { cache: "no-store" });
   if (!res.ok) return null;
   return res.json();
 }
 
-
+// 🔹 Tạo mới bài hát
 export async function createSong(data) {
   const endpoint = "/api/songs";
   return await apiFetch(endpoint, {
@@ -36,8 +50,7 @@ export async function createSong(data) {
   });
 }
 
-// Thêm các phương thức update, delete nếu cần
-
+// 🔹 Lấy tất cả bài hát theo artistId
 export async function fetchSongsByArtist(artistId) {
   const endpoint = "/api/songs";
   return await apiFetch(endpoint, { fallbackOnError: [] })
@@ -47,6 +60,7 @@ export async function fetchSongsByArtist(artistId) {
     });
 }
 
+// 🔹 Lấy ngẫu nhiên top bài hát (để gợi ý)
 export async function fetchTopSongs(limit = 10) {
   const endpoint = "/api/songs";
   return await apiFetch(endpoint, { fallbackOnError: [] })
@@ -56,6 +70,7 @@ export async function fetchTopSongs(limit = 10) {
     });
 }
 
+// 🔹 Tìm bài hát theo từ khoá (search bar)
 export async function fetchSongsByKeyword(keyword) {
   try {
     const query = encodeURIComponent(keyword);
@@ -65,4 +80,15 @@ export async function fetchSongsByKeyword(keyword) {
     console.error(`fetchSongsByKeyword error (${keyword}):`, error);
     return [];
   }
+}
+
+// 🔹 MỚI: Lọc bài hát theo vùng (Vietnamese / International / All)
+// 🔹 Có hỗ trợ noCache = true để dùng khi bấm nút refresh
+export async function fetchSongsByRegion(region, noCache = false) {
+  const endpoint = `/api/songs?region=${encodeURIComponent(region)}`;
+  const data = await apiFetch(endpoint, {
+    fallbackOnError: { songs: [] },
+    cache: noCache ? "no-store" : undefined,
+  });
+  return data.songs || [];
 }

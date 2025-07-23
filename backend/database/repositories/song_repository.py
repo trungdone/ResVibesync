@@ -4,8 +4,26 @@ from bson.errors import InvalidId
 from bson.regex import Regex
 from typing import List, Optional, Dict
 from datetime import datetime
+import random
+
+from services.genre_service import get_region_query
+
 
 class SongRepository:
+    PROJECTION = {
+        "title": 1,
+        "artistId": 1,
+        "album": 1,
+        "releaseYear": 1,
+        "duration": 1,
+        "genre": 1,
+        "coverArt": 1,
+        "audioUrl": 1,
+        "lyrics_lrc": 1,
+        "created_at": 1,
+        "updated_at": 1
+    }
+
     @staticmethod
     def _validate_object_id(song_id: str) -> ObjectId:
         try:
@@ -16,37 +34,34 @@ class SongRepository:
     @staticmethod
     def find_all(sort: Optional[str] = None, limit: Optional[int] = None, skip: Optional[int] = 0, query: Optional[Dict] = None) -> List[Dict]:
         try:
-            cursor = songs_collection.find(query or {})
+            cursor = songs_collection.find(query or {}, SongRepository.PROJECTION)
             if sort:
                 cursor = cursor.sort(sort, 1)
-            if skip is not None:
+            if skip:
                 cursor = cursor.skip(skip)
             if limit:
                 cursor = cursor.limit(limit)
-            songs = list(cursor)
-            print(f"Found {len(songs)} songs with query={query}, sort={sort}, skip={skip}, limit={limit}")
-            return songs
+            return list(cursor)
         except Exception as e:
-            print(f"Error in find_all: {str(e)}")
             raise ValueError(f"Failed to query songs: {str(e)}")
 
     @staticmethod
     def find_by_id(song_id: str) -> Optional[Dict]:
-        return songs_collection.find_one({"_id": SongRepository._validate_object_id(song_id)})
+        return songs_collection.find_one(
+            {"_id": SongRepository._validate_object_id(song_id)},
+            SongRepository.PROJECTION
+        )
 
     @staticmethod
     def find_by_artist_id(artist_id: ObjectId) -> List[Dict]:
         try:
-            # Thử tìm với cả chuỗi và ObjectId
-            songs = songs_collection.find({
+            return list(songs_collection.find({
                 "$or": [
                     {"artistId": str(artist_id)},
                     {"artistId": artist_id}
                 ]
-            })
-            return list(songs)
+            }, SongRepository.PROJECTION))
         except Exception as e:
-            print(f"Error in find_by_artist_id: {str(e)}")
             raise ValueError(f"Failed to query songs by artist_id: {str(e)}")
 
     @staticmethod
@@ -65,7 +80,9 @@ class SongRepository:
 
     @staticmethod
     def delete(song_id: str) -> bool:
-        result = songs_collection.delete_one({"_id": SongRepository._validate_object_id(song_id)})
+        result = songs_collection.delete_one(
+            {"_id": SongRepository._validate_object_id(song_id)}
+        )
         return result.deleted_count > 0
 
     @staticmethod
@@ -77,44 +94,77 @@ class SongRepository:
             ]
         })
         return result.deleted_count > 0
-    
+
     @staticmethod
     def find_by_album_id(album_id: str, artist_id: str) -> List[dict]:
-        return list(
-            songs_collection.find({
-                "album": album_id,
-                "$or": [
-                    {"artistId": artist_id},
-                    {"artistId": ObjectId(artist_id)}  # để chắc ăn
-                ]
-            })
-        )
-    
+        return list(songs_collection.find({
+            "album": album_id,
+            "$or": [
+                {"artistId": artist_id},
+                {"artistId": ObjectId(artist_id)}
+            ]
+        }, SongRepository.PROJECTION))
+
     @staticmethod
     def search_by_title(keyword: str, limit: int = 20) -> List[Dict]:
-
         try:
-            regex = Regex(keyword, "i")  # 'i' = case‑insensitive
-            cursor = (
-                songs_collection.find({"title": {"$regex": regex}})
+            regex = Regex(keyword, "i")
+            return list(
+                songs_collection.find({"title": {"$regex": regex}}, SongRepository.PROJECTION)
                 .sort("title", 1)
                 .limit(limit)
             )
-            results = list(cursor)
-            print(f"search_by_title -> {len(results)} hit(s) for '{keyword}'")
-            return results
         except Exception as e:
-            print(f"Error in search_by_title: {e}")
             raise ValueError(f"Failed to search songs: {e}")
 
     @staticmethod
     def find_by_ids(song_ids: List[str]) -> List[Dict]:
         try:
             object_ids = [ObjectId(id) for id in song_ids]
-            songs = songs_collection.find({"_id": {"$in": object_ids}})
-            return list(songs)
+            return list(songs_collection.find(
+                {"_id": {"$in": object_ids}},
+                SongRepository.PROJECTION
+            ))
         except Exception as e:
-            print(f"Error in find_by_ids: {e}")
             raise ValueError("Failed to find songs by IDs")
-   
-    
+
+    @staticmethod
+    def get_random_songs(limit: int = 10) -> List[Dict]:
+        try:
+            pipeline = [
+                {"$sample": {"size": limit}},
+                {"$project": SongRepository.PROJECTION}
+            ]
+            return list(songs_collection.aggregate(pipeline))
+        except Exception as e:
+            raise ValueError(f"Error in get_random_songs: {e}")
+
+    @staticmethod
+    def get_random_songs_by_region(region: str, limit: int = 12) -> List[Dict]:
+        try:
+            match_stage = {"$match": get_region_query(region)}
+            sample_stage = {"$sample": {"size": limit}}
+            project_stage = {"$project": SongRepository.PROJECTION}
+
+            pipeline = [match_stage, sample_stage, project_stage]
+            return list(songs_collection.aggregate(pipeline))
+        except Exception as e:
+            raise ValueError(f"Error in get_random_songs_by_region: {e}")
+
+    @staticmethod
+    def find_by_region(region: str, limit: Optional[int] = None, refresh: bool = False) -> List[Dict]:
+        try:
+            match = get_region_query(region)
+            cursor = songs_collection.find(match, SongRepository.PROJECTION)
+
+            if refresh:
+                songs = list(cursor)
+                random.shuffle(songs)
+                return songs[:limit] if limit else songs
+
+            cursor = cursor.sort("title", 1)
+            if limit:
+                cursor = cursor.limit(limit)
+            return list(cursor)
+        except Exception as e:
+            raise ValueError(f"Failed to find songs by region: {e}")

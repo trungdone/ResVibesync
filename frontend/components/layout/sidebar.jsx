@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home, Search, Library, Music, Heart, ListMusic, PlusCircle, Play
+  Home, Search, Library, Music, Heart, ListMusic, PlusCircle,Compass, Play,Tags
 } from "lucide-react";
 import CustomCreatePlaylistModal from "@/components/playlist/CustomCreatePlaylistModal";
 import { getAllPlaylists } from "@/lib/api/playlists";
@@ -77,6 +77,24 @@ export default function Sidebar() {
             <Search size={20} />
             <span>Search</span>
           </Link>
+          <Link href="/discovery" className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+          isActive("/discovery") ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"
+          }`}>
+          <Compass size={20} />
+          <span>Discovery</span>
+          </Link>
+            <Link
+          href="/genres"
+          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+          isActive("/genres")
+          ? "bg-white/10 text-white"
+          : "text-gray-400 hover:bg-white/5 hover:text-white"
+          }`}
+          >
+          <Tags size={20} />
+          <span>Topics & Genres</span>
+          </Link>
+
           <Link href="/library" className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
             isActive("/library") ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"
           }`}>
