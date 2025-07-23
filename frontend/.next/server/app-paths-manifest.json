@@ -1,7 +1,5 @@
 {
-  "/viewAll/songs/page": "app/viewAll/songs/page.js",
-  "/admin/albums/page": "app/admin/albums/page.js",
-  "/admin/dashboard/page": "app/admin/dashboard/page.js",
-  "/admin/songs/page": "app/admin/songs/page.js",
-  "/admin/artists/page": "app/admin/artists/page.js"
+  "/page": "app/page.js",
+  "/genres/page": "app/genres/page.js",
+  "/playlistByGenre/page": "app/playlistByGenre/page.js"
 }
