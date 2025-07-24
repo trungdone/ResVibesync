@@ -1,129 +1,139 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { useMusic } from "@/context/music-context";
-import { Play, Shuffle, MoreHorizontal, Disc, Heart, Share2, Plus, Eye, User } from "lucide-react";
-import { fetchArtistById, fetchSuggestedArtists } from "@/lib/api/artists";
+import {
+  Play, Shuffle, MoreHorizontal, Share2, Plus, Eye, Heart
+} from "lucide-react";
+
+import { fetchArtistById, fetchSuggestedArtists, followArtist, unfollowArtist } from "@/lib/api/artists";
 import { fetchSongsByArtist, fetchTopSongs } from "@/lib/api/songs";
 import { fetchAlbumsByArtist } from "@/lib/api/albums";
-import SongList from "@/components/songs/song-list";
 
-const RelatedArtistCard = ({ artist }) => (
-  <Link href={`/artist/${artist._id || artist.id || "default"}?from=youmaylike`}>
-    <div className="bg-gray-800/50 p-4 rounded-lg text-center hover:bg-gray-700/50 transition-transform duration-300 transform hover:scale-105">
-      <div className="relative w-28 h-28 mx-auto rounded-full overflow-hidden shadow-md">
-        <Image
-          src={artist.image || "/placeholder.svg"}
-          alt={artist.name || "Artist image"}
-          fill
-          className="object-cover"
-        />
-      </div>
-      <h4 className="text-base font-semibold mt-3 text-white">{artist.name || "Unknown Artist"}</h4>
-      <p className="text-xs text-gray-400">{artist.genres?.join(", ") || "No genres available"}</p>
-    </div>
-  </Link>
-);
+import { useMusic } from "@/context/music-context";
+import ArtistSongs from "@/components/artist/ArtistSongs";
+import ArtistAlbums from "@/components/artist/ArtistAlbums";
+import TopSongs from "@/components/artist/TopSongs";
+import RelatedArtists from "@/components/artist/RelatedArtists";
 
-const AchievementList = ({ achievements }) => (
-  <ul className="list-disc list-inside text-gray-300 space-y-3 text-sm">
-    {achievements.map((achievement, index) => (
-      <li key={index}>{achievement}</li>
-    ))}
-  </ul>
-);
+export default function ArtistDetailPage() {
+  const { id: artistId } = useParams();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
+  const hasFetchedSuggestions = useRef(false);
 
-export default function ArtistDetailPage({ params }) {
-  const { id } = use(params);
   const [artist, setArtist] = useState(null);
-  const [suggestedArtists, setSuggestedArtists] = useState([]);
   const [artistSongs, setArtistSongs] = useState([]);
   const [artistAlbums, setArtistAlbums] = useState([]);
   const [topSongs, setTopSongs] = useState([]);
-  const [achievements, setAchievements] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { playSong } = useMusic();
-  const [isShuffling, setIsShuffling] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [suggestedArtists, setSuggestedArtists] = useState([]);
   const [showMenu, setShowMenu] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [previousId, setPreviousId] = useState(null);
-  const [navigationLevel, setNavigationLevel] = useState(1);
-  const [showAllSongs, setShowAllSongs] = useState(false);
-  const [showAllTopSongs, setShowAllTopSongs] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
+
+  const {
+    setSongs,
+    setContext,
+    setContextId,
+    playSong,
+    toggleShuffle,
+    isShuffling
+  } = useMusic();
 
   useEffect(() => {
-    async function loadData() {
+    const token = localStorage.getItem("token");
+    if (!artistId || !token) return;
+
+    const loadData = async () => {
       try {
         setLoading(true);
-        const artistId = id ? id.toString() : null;
-        if (!artistId) throw new Error("Artist ID is missing or invalid");
 
-        console.log(`Fetching artist with ID: ${artistId}`);
-        const artistData = await fetchArtistById(artistId);
-        console.log("Artist data (full):", artistData);
-        if (!artistData) throw new Error("Artist not found");
-
-        let suggestedArtistsData = [];
-        let artistSongsData = [];
-        let artistAlbumsData = [];
-        let topSongsData = [];
-        try {
-          console.log("Fetching suggested artists...");
-          suggestedArtistsData = await fetchSuggestedArtists(artistId);
-          console.log("Suggested artists data (full):", suggestedArtistsData);
-          if (!Array.isArray(suggestedArtistsData)) suggestedArtistsData = [];
-          suggestedArtistsData = suggestedArtistsData.filter(a => a._id !== artistId && a.id !== artistId);
-          console.log("Fetching artist songs...");
-          artistSongsData = await fetchSongsByArtist(artistId);
-          console.log("Artist songs data:", artistSongsData);
-          console.log("Fetching artist albums...");
-          artistAlbumsData = await fetchAlbumsByArtist(artistId);
-          console.log("Artist albums data (full):", artistAlbumsData);
-          artistAlbumsData.forEach((album, index) => {
-            console.log(`Album ${index + 1} coverArt:`, album.coverArt);
-          });
-          console.log("Fetching top songs...");
-          topSongsData = await fetchTopSongs();
-          console.log("Top songs data:", topSongsData);
-        } catch (fetchError) {
-          console.error("Failed to fetch data:", fetchError);
-          suggestedArtistsData = [];
-          artistSongsData = [];
-          artistAlbumsData = [];
-          topSongsData = [];
-        }
+        const [artistData, songs, albums] = await Promise.all([
+          fetchArtistById(artistId, token),
+          fetchSongsByArtist(artistId),
+          fetchAlbumsByArtist(artistId),
+        ]);
 
         setArtist(artistData);
-        setSuggestedArtists(suggestedArtistsData);
-        setArtistSongs(artistSongsData);
-        setArtistAlbums(artistAlbumsData);
-        setTopSongs(topSongsData);
-        setAchievements(artistData.achievements || []);
+        setIsFollowing(artistData?.isFollowing || false);
+        setArtistSongs(songs);
+        setArtistAlbums(albums);
+
+        setContext("artist");
+        setContextId(artistId);
+
+        if (from !== "youmaylike" && !hasFetchedSuggestions.current) {
+          const suggested = await fetchSuggestedArtists(artistId);
+          setSuggestedArtists(suggested.filter(a => a._id !== artistId));
+          hasFetchedSuggestions.current = true;
+        }
+
+        const top = await fetchTopSongs();
+        setTopSongs(top);
       } catch (err) {
-        console.error("Error loading data:", err);
-        setError(err.message || "Failed to load artist data");
+        console.error("❌ Error loading artist data:", err);
       } finally {
         setLoading(false);
       }
-    }
-    loadData();
-  }, [id]);
+    };
 
-  useEffect(() => {
-    if (id) {
-      const searchParams = new URLSearchParams(window.location.search);
-      if (!previousId || searchParams.get("from") !== "youmaylike") {
-        setNavigationLevel(1);
-      } else {
-        setNavigationLevel(2);
-      }
-      setPreviousId(id);
+    loadData();
+  }, [artistId, from]);
+
+  const handlePlayAll = () => {
+    if (artistSongs.length > 0) {
+      setSongs(artistSongs);
+      setContext("artist");
+      setContextId(artistId);
+      setTimeout(() => {
+        playSong(artistSongs[0]);
+      }, 0);
     }
-  }, [id, previousId]);
+  };
+
+  const handleShuffle = () => {
+    toggleShuffle();
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => alert("Link copied!"))
+      .catch(err => console.error("Clipboard error:", err));
+  };
+
+  const handleAddToPlaylist = () => {
+    alert("⚙️ Add to playlist coming soon.");
+  };
+
+  const toggleFollow = async () => {
+    const resolvedArtistId = artist?._id || artist?.id;
+    if (!resolvedArtistId) {
+      console.warn("⚠️ Artist ID is missing");
+      return;
+    }
+
+    try {
+      if (isFollowing) {
+        await unfollowArtist(resolvedArtistId);
+        setIsFollowing(false);
+        setArtist((prev) => ({
+          ...prev,
+          followerCount: Math.max((prev.followerCount || 1) - 1, 0),
+        }));
+      } else {
+        await followArtist(resolvedArtistId);
+        setIsFollowing(true);
+        setArtist((prev) => ({
+          ...prev,
+          followerCount: (prev.followerCount || 0) + 1,
+        }));
+      }
+    } catch (err) {
+      console.error("❌ Error in follow/unfollow:", err);
+    }
+  };
 
   if (loading) {
     return (
@@ -133,97 +143,60 @@ export default function ArtistDetailPage({ params }) {
     );
   }
 
-  if (error || !artist) {
-    return (
-      <div className="flex justify-center items-center h-[60vh] bg-gray-900 text-gray-300">
-        {error || "Artist not found"}
-      </div>
-    );
-  }
-
-  const handlePlayAll = () => {
-    if (artistSongs.length > 0) {
-      try {
-        playSong(artistSongs[0]);
-        setIsPlaying(true);
-        setTimeout(() => setIsPlaying(false), 2000);
-      } catch (err) {
-        console.error("Play song error:", err);
-      }
-    }
-  };
-
-  const toggleShuffle = () => {
-    setIsShuffling((prev) => !prev);
-  };
-
-  const toggleFollow = () => {
-    setIsFollowing((prev) => !prev);
-  };
-
-  const toggleMenu = () => {
-    setShowMenu((prev) => !prev);
-  };
-
-  const toggleShowSongs = () => {
-    setShowAllSongs(!showAllSongs);
-  };
-
-  const toggleShowTopSongs = () => {
-    setShowAllTopSongs(!showAllTopSongs);
-  };
-
-  const visibleSongs = showAllSongs ? artistSongs : artistSongs.slice(0, 5);
-  const visibleTopSongs = showAllTopSongs ? topSongs : topSongs.slice(0, 5);
-
   return (
-    <div className="bg-gray-900 min-h-screen text-white">
-      <div
-        className="relative h-96 bg-gradient-to-b from-purple-800/50 to-gray-900 flex flex-col justify-end p-6"
-        style={{
-          backgroundImage: `url(${artist.image || "/placeholder.svg"})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundBlendMode: "overlay",
-        }}
-      >
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-        <div className="relative z-10 flex flex-col md:flex-row gap-4 items-center md:items-end">
-          <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-lg overflow-hidden shadow-2xl">
+    <div className="bg-gray-900 text-white min-h-screen">
+      {/* Header ảnh lớn phong cách cũ */}
+      <div className="relative h-[420px] w-full bg-gradient-to-br from-indigo-900 via-purple-800 to-black">
+        <div className="absolute inset-0 bg-black/50" />
+
+        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-end h-full px-8 pb-8 gap-8">
+          <div className="relative w-44 h-44 md:w-64 md:h-64 rounded-lg overflow-hidden shadow-2xl border-4 border-white/20">
             <Image
               src={artist.image || "/placeholder.svg"}
               alt={artist.name}
               fill
-              priority
               className="object-cover"
+              priority
             />
           </div>
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl font-bold mb-3 drop-shadow-lg">{artist.name}</h1>
-            <p className="text-gray-300 text-base mb-4 max-w-2xl">{artist.bio || "No bio available"}</p>
-            <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="text-center md:text-left">
+            <h1 className="text-4xl md:text-5xl font-bold drop-shadow-md">
+              {artist.name}
+            </h1>
+            <p className="mt-2 text-gray-300 max-w-2xl">
+              {artist.bio || "No bio available."}
+            </p>
+            <p className="text-gray-400 text-sm mt-2">
+              Followers:{" "}
+              <span className="text-white font-semibold">
+                {artist.followerCount?.toLocaleString() || 0}
+              </span>
+            </p>
+            <div className="mt-4 flex flex-wrap gap-4">
               <button
-                className={`bg-green-500 text-black font-semibold px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
-                  isPlaying ? "bg-green-600" : "hover:bg-green-400"
-                } disabled:opacity-50`}
                 onClick={handlePlayAll}
-                disabled={artistSongs.length === 0}
+                className="bg-green-500 text-black font-semibold px-6 py-3 rounded-full flex items-center gap-2 hover:bg-green-400"
               >
                 <Play size={20} /> Play All
               </button>
               <button
-                className={`bg-gray-800 text-gray-300 px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
-                  isShuffling ? "bg-green-600 hover:bg-green-400" : "hover:bg-gray-700"
+                onClick={handleShuffle}
+                className={`px-6 py-3 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105 ${
+                  isShuffling
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-800 text-gray-300 hover:bg-gray-700"
                 }`}
-                onClick={toggleShuffle}
               >
-                <Shuffle size={20} /> Shuffle
+                <Shuffle size={20} />
+                Shuffle
               </button>
               <button
-                className={`bg-gray-800 text-gray-300 px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
-                  isFollowing ? "bg-green-600 hover:bg-green-400" : "hover:bg-gray-700"
-                }`}
                 onClick={toggleFollow}
+                className={`px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
+                  isFollowing
+                    ? "bg-green-600 text-white hover:bg-green-400"
+                    : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                }`}
               >
                 {isFollowing ? (
                   <>
@@ -237,24 +210,37 @@ export default function ArtistDetailPage({ params }) {
               </button>
               <div className="relative">
                 <button
-                  className={`bg-gray-800 text-gray-300 px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
-                    showMenu ? "bg-green-600 hover:bg-green-400" : "hover:bg-gray-700"
+                  onClick={() => setShowMenu(prev => !prev)}
+                  className={`px-6 py-3 rounded-full flex items-center gap-2 ${
+                    showMenu
+                      ? "bg-green-600"
+                      : "bg-gray-800 text-gray-300 hover:bg-gray-700"
                   }`}
-                  onClick={toggleMenu}
                 >
                   <MoreHorizontal size={20} /> More
                 </button>
                 {showMenu && (
-                  <div className="absolute left-auto right-0 mt-2 w-56 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg shadow-lg py-2 z-10 border border-gray-700 origin-right">
-                    <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2">
+                  <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                    <button
+                      className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2"
+                      onClick={handleShare}
+                    >
                       <Share2 size={18} /> Share
                     </button>
-                    <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2">
+                    <button
+                      className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2"
+                      onClick={handleAddToPlaylist}
+                    >
                       <Plus size={18} /> Add to Playlist
                     </button>
-                    <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2">
-                      <Eye size={18} /> View Artist Details
-                    </button>
+                    <Link
+                      href={`/artist/${artist._id}`}
+                      className="block px-4 py-2 hover:bg-gray-700 text-sm text-gray-300"
+                      onClick={() => setShowMenu(false)}
+                    >
+                      <Eye size={18} className="inline-block mr-2" />
+                      View Artist
+                    </Link>
                   </div>
                 )}
               </div>
@@ -263,127 +249,14 @@ export default function ArtistDetailPage({ params }) {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 space-y-12">
-        <div>
-          <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <Play size={24} className="text-green-500" /> Songs
-          </h3>
-          {artistSongs.length > 0 ? (
-            <>
-              <SongList songs={visibleSongs} />
-              {artistSongs.length > 5 && (
-                <button
-                  onClick={toggleShowSongs}
-                  className="mt-4 text-purple-400 hover:underline text-sm"
-                >
-                  {showAllSongs ? "Ẩn bớt" : "Xem thêm"}
-                </button>
-              )}
-            </>
-          ) : (
-            <p className="text-gray-400">No songs available for this artist.</p>
-          )}
-        </div>
-
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-2xl font-bold flex items-center gap-2">
-              <Disc size={24} className="text-green-500" /> Albums
-            </h3>
-            <Link href="/artists" className="text-sm text-purple-400 hover:underline">
-              View All
-            </Link>
-          </div>
-          {artistAlbums.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {artistAlbums.map((album, index) => (
-                <div
-                  key={album._id || `album-${index}`}
-                  className="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-transform duration-300 transform hover:scale-105"
-                >
-                  <div className="relative w-full h-40 rounded-lg overflow-hidden shadow-md">
-                    <Image
-                      src={album.cover_art || "/placeholder.svg"}
-                      alt={album.title}
-                      fill
-                      className="object-cover"
-                      onError={(e) => console.error(`Image load error for ${album.title}:`, e)}
-                    />
-                  </div>
-                  <h4 className="text-base font-semibold mt-3">{album.title}</h4>
-                  <p className="text-xs text-gray-400">{album.releaseYear}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-400">No albums available for this artist.</p>
-          )}
-        </div>
-
-        {navigationLevel === 1 && suggestedArtists.length > 0 && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold flex items-center gap-2">
-                <Heart size={24} className="text-green-500" /> You May Like
-              </h3>
-              <Link href="/artists" className="text-sm text-purple-400 hover:underline">
-                View All
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {suggestedArtists.map((artist, index) => (
-                <RelatedArtistCard
-                  key={artist._id || `suggested-${index}`}
-                  artist={artist}
-                />
-              ))}
-            </div>
-          </div>
+      {/* CONTENT */}
+      <div className="max-w-6xl mx-auto px-4 py-12 space-y-16">
+        <ArtistSongs songs={artistSongs} />
+        <ArtistAlbums albums={artistAlbums} />
+        {topSongs.length > 0 && <TopSongs topSongs={topSongs} />}
+        {suggestedArtists.length > 0 && from !== "youmaylike" && (
+          <RelatedArtists suggestedArtists={suggestedArtists} />
         )}
-
-        <div>
-          <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <User size={24} className="text-green-500" /> About {artist.name}
-          </h3>
-          <div className="flex flex-col md:flex-row gap-8 bg-gray-800/50 p-6 rounded-lg">
-            <div className="md:w-1/3">
-              <div className="relative w-full h-64 rounded-lg overflow-hidden shadow-lg">
-                <Image
-                  src={artist.image || "/placeholder.svg"}
-                  alt={`${artist.name} profile`}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="md:w-2/3">
-              <p className="text-gray-300 mb-6 text-base">{artist.bio || "No bio available"}</p>
-              <h4 className="text-xl font-semibold mb-3">Achievements</h4>
-              <AchievementList achievements={achievements} />
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <Play size={24} className="text-green-500" /> Top Songs of the Month
-          </h3>
-          {topSongs.length > 0 ? (
-            <>
-              <SongList songs={visibleTopSongs} />
-              {topSongs.length > 5 && (
-                <button
-                  onClick={toggleShowTopSongs}
-                  className="mt-4 text-purple-400 hover:underline text-sm"
-                >
-                  {showAllTopSongs ? "Ẩn bớt" : "Xem thêm"}
-                </button>
-              )}
-            </>
-          ) : (
-            <p className="text-gray-400">No top songs available.</p>
-          )}
-        </div>
       </div>
     </div>
   );

@@ -75,6 +75,72 @@ export default function UsersPage() {
     }
   };
 
+<<<<<<< HEAD
+=======
+    // Handle demote artist
+  const handleDemoteArtistToUser = async (userId, userName) => {
+    const confirm = window.confirm(
+      `Are you sure you want to demote artist ${userName} to user?`
+    );
+    if (!confirm) return;
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`http://localhost:8000/user/users/${userId}/demote-artist`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUsers(users.map((u) => (u.id === userId ? { ...u, role: "user" } : u)));
+        toast({
+          title: "Success",
+          description: `${userName} has been demoted to user.`,
+        });
+      } else {
+        throw new Error(data.detail || "Failed to demote artist");
+      }
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message,
+      });
+    }
+  };
+
+  // Handle delete user
+  const handleDeleteUser = async (userId, userName) => {
+    const confirm = window.confirm(
+      `Are you sure you want to permanently delete the account of ${userName}?`
+    );
+    if (!confirm) return;
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`http://localhost:8000/user/users/${userId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUsers(users.filter((u) => u.id !== userId));
+        toast({
+          title: "Success",
+          description: `${userName} has been deleted.`,
+        });
+      } else {
+        throw new Error(data.detail || "Failed to delete user");
+      }
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message,
+      });
+    }
+  };
+
+
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
   // Handle demote to user
   const handleDemoteToUser = async (userId, userName) => {
     const confirm = window.confirm(
@@ -206,6 +272,24 @@ export default function UsersPage() {
                   Promote to Admin
                 </button>
               )}
+<<<<<<< HEAD
+=======
+              {user.role === "artist" && (
+                <button
+                  onClick={() => handleDemoteArtistToUser(user.id, user.name)}
+                  className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
+                >
+                  Demote Artist
+                </button>
+              )}
+
+              <button
+                onClick={() => handleDeleteUser(user.id, user.name)}
+                className="px-4 py-2 bg-red-800 text-white rounded hover:bg-red-900"
+              >
+                Delete
+              </button>
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
               {user.banned ? (
                 <button
                   onClick={() => handleUnbanUser(user.id, user.name)}

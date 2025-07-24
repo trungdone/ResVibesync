@@ -116,6 +116,44 @@ artists = [
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     },
+
+            {
+            "name": "Tuấn Cry",
+            "bio": "ehhe",
+            "genres": ["V-Pop"],
+            "followers": 4667,
+            "image": "https://res.cloudinary.com/dhifiomji/image/upload/v1750472852/images/T…",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "name": "Sơn Tùng MTP",
+            "bio": "ehhđjd",
+            "genres": ["V-Pop"],
+            "followers": 533738,
+            "image": "https://res.cloudinary.com/dhifiomji/image/upload/v1750472850/images/S…",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "name": "ATUS",
+            "bio": "dgdjdjd",
+            "genres": ["Pop"],
+            "followers": 7444884,
+            "image": "https://res.cloudinary.com/dhifiomji/image/upload/v1750472835/images/A…",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        },
+        {
+            "name": "Tăng Duy Tân",
+            "bio": "dhdhdhhd",
+            "genres": ["Rap"],
+            "followers": 464748,
+            "image": "https://res.cloudinary.com/dhifiomji/image/upload/v1750472851/images/T…",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        },
+
 ]
 
 def seed_artists():

@@ -1,6 +1,7 @@
 from database.db import artists_collection
 from bson import ObjectId
 from typing import List, Optional
+from difflib import get_close_matches
 
 class ArtistRepository:
     def __init__(self):
@@ -12,6 +13,9 @@ class ArtistRepository:
             cursor = cursor.limit(limit)
         return list(cursor)
 
+    def find_by_name(self, name: str) -> List[dict]:
+        return list(self.collection.find({"name": {"$regex": f"^{name}$", "$options": "i"}}))
+
     def find_by_id(self, artist_id: ObjectId) -> Optional[dict]:
         return self.collection.find_one({"_id": artist_id})
 
@@ -21,7 +25,16 @@ class ArtistRepository:
     def update_one(self, artist_id: ObjectId, update_data: dict):
         return self.collection.update_one({"_id": artist_id}, {"$set": update_data})
 
+    def update(self, artist_id: str, update_data: dict):
+        return self.update_one(ObjectId(artist_id), update_data)
+
     def delete_one(self, artist_id: ObjectId):
         return self.collection.delete_one({"_id": artist_id})
-    
-    
+
+    def get_similar_artists(self, query: str, limit=5) -> List[dict]:
+        all_artists = list(self.collection.find({}, {"name": 1}))  # chỉ lấy name và _id
+        artist_names = [a["name"] for a in all_artists]
+        matches = get_close_matches(query, artist_names, n=limit, cutoff=0.6)
+
+        matched_artists = [a for a in all_artists if a["name"] in matches]
+        return matched_artists

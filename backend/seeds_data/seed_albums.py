@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from seeds_data.seed_artists import seed_artists
 from seeds_data.seed_songs import song_map  # Giả sử song_map đã được định nghĩa trong seed_songs.py
 
+
+
 # Step 1: Đảm bảo nghệ sĩ và bài hát đã được seed
 artist_map = seed_artists()
 print("[✅ DEBUG] artist_map:", artist_map)

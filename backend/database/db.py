@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from passlib.context import CryptContext
 from bson import ObjectId
 import os
+import datetime
 
 # Lấy URI từ biến môi trường hoặc dùng mặc định
 MONGO_URI = os.getenv(
@@ -16,13 +17,33 @@ db = client["Vibesync"]
 # Các collection trong MongoDB
 songs_collection = db.get_collection("songs")
 users_collection = db.get_collection("users")
-history_collection = db.get_collection("song_history")  # ✅ Dùng cho lưu lịch sử nghe
-song_history_collection = db.get_collection("song_history")  # alias (có thể gộp)
+history_collection = db.get_collection("history")
+song_history_collection = db.get_collection("song_history")
 recommendations_collection = db.get_collection("recommendations")
 playlists_collection = db.get_collection("playlists")
 artists_collection = db.get_collection("artists")
 albums_collection = db.get_collection("albums")
 chat_history_collection = db.get_collection("chat_history")
+artist_requests_collection = db.get_collection("artist_requests")
+notifications_collection = db.get_collection("notifications")
+follows_collection = db.get_collection("follows")
+likes_collection = db.get_collection("likes")
 
 # Password hash setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Optional: Cập nhật dữ liệu albums
+result1 = albums_collection.update_many(
+    {"cover_art": ""},
+    {"$set": {"cover_art": None}}
+)
+print(f"✅ Updated {result1.modified_count} documents for empty cover_art")
+
+result2 = albums_collection.update_many(
+    {"release_year": {"$lt": 1900}},
+    {"$set": {"release_year": 2025}}
+)
+print(f"✅ Updated {result2.modified_count} documents for invalid release_year")
+
+print("📊 Remaining with empty cover_art:", albums_collection.count_documents({"cover_art": ""}))
+print("📊 Remaining with invalid release_year:", albums_collection.count_documents({"release_year": {"$lt": 1900}}))

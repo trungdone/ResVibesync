@@ -22,6 +22,19 @@ export async function createPlaylist(payload) {
 }
 
 
+export async function fetchPlaylists() {
+  const res = await fetch(`${API_BASE}/playlists`, {
+    cache: "no-store",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch playlists");
+  return res.json();
+}
+
+
 
 // ✅ Lấy tất cả playlist (có thể lọc theo creatorId)
 export async function getAllPlaylists(creatorId) {

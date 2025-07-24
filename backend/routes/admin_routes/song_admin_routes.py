@@ -129,4 +129,8 @@ async def delete_song(id: str, service: AdminSongService = Depends(get_song_serv
         return {"message": "Song deleted successfully"}
     except Exception as e:
         print(f"Error in delete_song {id}: {str(e)}")
+<<<<<<< HEAD
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+=======
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6

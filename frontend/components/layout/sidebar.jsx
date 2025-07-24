@@ -1,53 +1,65 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home, Search, Library, Music, Heart, ListMusic, PlusCircle
+  Home, Search, Library, Music, Heart, ListMusic, PlusCircle,Compass, Play,Tags
 } from "lucide-react";
 import CustomCreatePlaylistModal from "@/components/playlist/CustomCreatePlaylistModal";
 import { getAllPlaylists } from "@/lib/api/playlists";
-import { useAuth } from "@/context/auth-context"; // nhớ phải import nếu chưa có
-import { userAgent } from "next/server";
+import { useAuth } from "@/context/auth-context";
+import { useMusic } from "@/context/music-context";
+import { setPlaylistRefreshFunction } from "@/lib/api/playlist-refresh";;
+
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user  } = useAuth(); // ✅ gọi trong hàm Sidebar
+  const { user } = useAuth();
+  const { setContext, setContextId, updateSongsForContext, playSong, songs } = useMusic();
   const [playlists, setPlaylists] = useState([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const handleSubmit = async () => {
-  const creatorId = user?.id ?? ""; // ✅ Bây giờ an toàn
+  const handleSubmit = async (title, description, isPublic) => {
+    if (!user?.id) return;
+    await createPlaylist({
+      title,
+      description,
+      isPublic,
+      creator: user.id,
+    });
+  };
 
-  await createPlaylist({
-    title,
-    description,
-    isPublic,
-    creator: creatorId,
-  });
-};
   useEffect(() => {
     if (!user?.id) return;
 
-    async function loadPlaylists() {
+    const loadPlaylists = async () => {
       try {
-        const playlistsData = await getAllPlaylists(user.id); // ✅ chỉ lấy playlist của user
+        const playlistsData = await getAllPlaylists(user.id);
         setPlaylists(playlistsData || []);
-
-        
       } catch (e) {
         console.error("Failed to load playlists:", e);
       }
-    }
+    };
 
     loadPlaylists();
+
+    // ✅ Register global trigger
+    setPlaylistRefreshFunction(loadPlaylists);
   }, [user]);
 
 
-  
 
   const isActive = (path) => pathname === path;
+
+  const handlePlayPlaylist = async (playlistId) => {
+    setContext("playlist");
+    setContextId(playlistId);
+    await updateSongsForContext("playlist", playlistId);
+    if (songs.length > 0) {
+      playSong(songs[0]);
+    }
+  };
 
   return (
     <aside className="w-64 hidden md:flex flex-col bg-black/30 h-full overflow-y-auto">
@@ -72,6 +84,24 @@ export default function Sidebar() {
             <Search size={20} />
             <span>Search</span>
           </Link>
+          <Link href="/discovery" className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+          isActive("/discovery") ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"
+          }`}>
+          <Compass size={20} />
+          <span>Discovery</span>
+          </Link>
+            <Link
+          href="/genres"
+          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+          isActive("/genres")
+          ? "bg-white/10 text-white"
+          : "text-gray-400 hover:bg-white/5 hover:text-white"
+          }`}
+          >
+          <Tags size={20} />
+          <span>Topics & Genres</span>
+          </Link>
+
           <Link href="/library" className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
             isActive("/library") ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"
           }`}>
@@ -83,8 +113,6 @@ export default function Sidebar() {
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">Playlists</h3>
-
-            {/* Nút mở modal */}
             <button
               onClick={() => setIsCreateOpen(true)}
               className="text-gray-400 hover:text-white"
@@ -94,25 +122,21 @@ export default function Sidebar() {
             </button>
           </div>
 
-          {/* Modal tạo playlist */}
           <CustomCreatePlaylistModal
             open={isCreateOpen}
             onClose={() => setIsCreateOpen(false)}
             onPlaylistCreated={async () => {
               try {
-                if (!user?.id) return; // ✅ kiểm tra trước
+                if (!user?.id) return;
                 const latest = await getAllPlaylists(user.id);
                 setPlaylists(latest || []);
               } catch (e) {
                 console.error("Failed to refresh playlists:", e);
               }
             }}
-
+            onSubmit={handleSubmit}
           />
 
-
-
-          {/* Danh sách playlist */}
           <div className="space-y-1">
             <Link
               href="/playlist/liked"
@@ -125,16 +149,20 @@ export default function Sidebar() {
             </Link>
 
             {playlists.map((playlist) => (
-              <Link
-                key={playlist.id}
-                href={`/playlist/${playlist.id}`}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-white/5 text-gray-400 hover:text-white"
-              >
-                <div className="w-6 h-6 flex items-center justify-center bg-white/10 rounded-sm">
-                  <ListMusic size={12} className="text-white" />
-                </div>
-                <span className="truncate">{playlist.title}</span>
-              </Link>
+              <div key={playlist.id} className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-white/5">
+                <button
+                  onClick={() => handlePlayPlaylist(playlist.id)}
+                  className="text-gray-400 hover:text-white w-6 h-6 flex items-center justify-center"
+                >
+                  <Play size={12} />
+                </button>
+                <Link
+                  href={`/playlist/${playlist.id}`}
+                  className="flex-1 text-gray-400 hover:text-white truncate"
+                >
+                  {playlist.title}
+                </Link>
+              </div>
             ))}
           </div>
         </div>

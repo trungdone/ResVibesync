@@ -7,22 +7,28 @@ from models.album import AlbumCreate, AlbumUpdate, AlbumInDB
 from database.repositories.album_repository import AlbumRepository
 from database.repositories.song_repository import SongRepository
 
+
 class AlbumService:
     def __init__(self):
         self.album_repo = AlbumRepository()
         self.song_repo = SongRepository()
 
     def _build_album_in_db(self, album: dict) -> AlbumInDB:
+        current_year = datetime.utcnow().year
         return AlbumInDB(
             id=str(album["_id"]),
             title=album.get("title", ""),
             artist_id=str(album.get("artist_id", "")),
-            cover_art=album.get("cover_art", ""),
-            release_year=album.get("release_year", 0),
-            genre=album.get("genre", ""),
+            cover_art=album.get("cover_art") or album.get("cover_image") or "",
+            release_year=(
+                album.get("release_year", 0)
+                if album.get("release_year")
+                else album.get("release_date", datetime.utcnow()).year
+            ),
+            genres=album.get("genres", []) or [album.get("genre", "")],
             songs=album.get("songs", []),
             created_at=album.get("created_at", datetime.utcnow()),
-            updated_at=album.get("updated_at", None)
+            updated_at=album.get("updated_at", datetime.utcnow())
         )
 
     def get_all_albums(self, limit: Optional[int] = None, skip: int = 0) -> List[AlbumInDB]:
@@ -34,7 +40,7 @@ class AlbumService:
 
     def get_album_by_id(self, album_id: str) -> Optional[AlbumInDB]:
         try:
-            print(f"Searching for album with ID: {album_id}")  # Thêm log debug
+            print(f"Searching for album with ID: {album_id}")
             album = self.album_repo.find_by_id(album_id)
             if not album:
                 return None

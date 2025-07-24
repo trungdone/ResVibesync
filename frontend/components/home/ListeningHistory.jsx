@@ -29,7 +29,9 @@ export default function ListeningHistory() {
   return (
     <div className="px-4 sm:px-8">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">🕘 Nghe gần đây</h2>
+
+        <h2 className="text-2xl font-semibold">🕘 Recently listened</h2>
+
         <Link
           href="/history"
           className="text-sm text-blue-500 hover:underline font-medium"

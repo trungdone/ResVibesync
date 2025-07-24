@@ -9,6 +9,7 @@ export default async function RecommendedPlaylists() {
   // Filter first 6 playlists
   const recommendedPlaylists = playlistsData.slice(0, 6)
 
+<<<<<<< HEAD
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
@@ -21,4 +22,7 @@ export default async function RecommendedPlaylists() {
       <PlaylistGrid playlists={recommendedPlaylists} />
     </section>
   )
+=======
+
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
 }

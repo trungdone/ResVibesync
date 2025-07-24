@@ -55,3 +55,34 @@ export async function fetchTopSongs(limit = 10) {
       return songs.sort(() => 0.5 - Math.random()).slice(0, limit); // Sắp xếp ngẫu nhiên
     });
 }
+
+export async function fetchSongsByKeyword(keyword) {
+  try {
+    const query = encodeURIComponent(keyword);
+    const data = await apiFetch(`/api/search?query=${query}`);
+    return data?.songs || [];
+  } catch (error) {
+    console.error(`fetchSongsByKeyword error (${keyword}):`, error);
+    return [];
+  }
+}
+
+
+export async function fetchSongsByGenre(genreName) {
+  try {
+    const query = genreName ? new URLSearchParams({ genre: genreName }).toString() : "";
+    const endpoint = `/api/songs${query ? `?${query}` : ""}`;
+    console.log(`Fetching songs for genre: ${genreName}`);
+    const data = await apiFetch(endpoint, { fallbackOnError: { songs: [], total: 0 } });
+    if (!data || !Array.isArray(data.songs)) {
+      console.error("Invalid response from API:", data);
+      return { songs: [], total: 0 };
+    }
+    console.log(`Received ${data.songs.length} songs`);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching songs by genre (${genreName}):`, error);
+    return { songs: [], total: 0 };
+  }
+}
+

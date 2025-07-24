@@ -1,118 +1,90 @@
 "use client"
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SongList from "@/components/songs/song-list";
-import PlaylistGrid from "@/components/playlist/playlist-grid";
-import { getAllPlaylists } from "@/lib/api/playlists";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import axios from "axios"
+import { Settings, UserPlus } from "lucide-react"
+import { useAuth } from "@/context/auth-context"
+const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/<your_cloud_name>/"
+import Footer from "@/components/layout/footer"
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(null);
-  const [playlists, setPlaylists] = useState([]);
-  const [likedSongs, setLikedSongs] = useState([]);
-  const [historySongs, setHistorySongs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [user, setUser] = useState(null)
+  const router = useRouter()
 
   useEffect(() => {
-    const token = localStorage.getItem("token"); // ✅ Lấy token trong useEffect
-
-    if (!token) {
-      router.push("/signin");
-      return;
-    }
-
-    async function loadData() {
+    const fetchUser = async () => {
       try {
-        setLoading(true);
-
-        const userResponse = await fetch("http://localhost:8000/user/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const userData = await userResponse.json();
-
-        const detail = Array.isArray(userData.detail)
-          ? userData.detail.map((d) => d.msg).join(", ")
-          : userData.detail || "Unauthorized";
-
-        if (!userResponse.ok) throw new Error(detail);
-        setUser(userData);
-
-        const playlistData = await getAllPlaylists();
-        setPlaylists(playlistData.slice(0, 8) || []);
-
-        const songData = await getAllPlaylists();
-        // Kiểm tra và xử lý songData
-        const songs = Array.isArray(songData) ? songData : songData?.songs || [];
-        if (songs.length === 0) {
-          console.warn("No songs data available.");
-        }
-        setLikedSongs(songs.slice(0, 10));
-        setHistorySongs(songs.slice(10, 20));
+        const res = await axios.get("http://localhost:8000/user/me", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        })
+        setUser(res.data)
       } catch (err) {
-        console.error("Failed to load profile data:", err);
-        router.push("/signin");
-      } finally {
-        setLoading(false);
+        router.push("/signin")
       }
     }
+    fetchUser()
+  }, [])
 
-    loadData();
-  }, [router]);
+  if (!user) return <div className="text-white p-10">Loading...</div>
 
-  if (loading || !user) {
-    return <div className="flex justify-center items-center h-[60vh]">Loading...</div>;
-  }
+  const avatarUrl = user.avatar?.startsWith("http")
+    ? user.avatar
+    : `${CLOUDINARY_BASE_URL}${user.avatar || "images/default.jpg"}`
 
   return (
-    <div className="space-y-6 pb-24">
-      <div className="flex items-center gap-6">
-        <div className="relative w-32 h-32 rounded-full overflow-hidden">
-          <Image
-            src={user?.avatar || "/placeholder.svg?height=128&width=128&query=user+avatar"}
-            alt="Profile"
-            fill
-            className="object-cover"
+    <div className="min-h-screen bg-black text-white">
+      {/* === HEADER SECTION === */}
+      <div className="relative bg-gradient-to-b from-[#1f1f1f] to-black">
+        {/* Blurred Background */}
+        <div
+          className="absolute inset-0 bg-cover bg-center blur-2xl opacity-20"
+          style={{ backgroundImage: `url('${avatarUrl}')` }}
+        />
+        
+        {/* Foreground Content */}
+        <div className="relative z-10 px-6 py-10 sm:py-16 flex items-end gap-6">
+          {/* Avatar */}
+          <img
+            src={avatarUrl}
+            alt="User Avatar"
+            className="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover shadow-lg border-4 border-white"
           />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold">{user?.name || "User Name"}</h1>
-          <p className="text-gray-400">{user?.email || "user@example.com"}</p>
-          <div className="flex gap-4 mt-2">
-            <div>
-              <span className="text-gray-400">Playlists</span>
-              <p className="font-semibold">{playlists.length}</p>
-            </div>
-            <div>
-              <span className="text-gray-400">Followers</span>
-              <p className="font-semibold">245</p>
-            </div>
-            <div>
-              <span className="text-gray-400">Following</span>
-              <p className="font-semibold">118</p>
-            </div>
+
+          {/* Name + Email */}
+          <div>
+            <h1 className="text-4xl sm:text-5xl font-bold">{user.name}</h1>
+            <p className="text-gray-300 mt-2 text-sm sm:text-base">{user.email}</p>
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="playlists">
-        <TabsList className="bg-white/5">
-          <TabsTrigger value="playlists">Playlists</TabsTrigger>
-          <TabsTrigger value="liked">Liked Songs</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
-        <TabsContent value="playlists" className="mt-6">
-          <PlaylistGrid playlists={playlists} />
-        </TabsContent>
-        <TabsContent value="liked" className="mt-6">
-          <SongList songs={likedSongs} />
-        </TabsContent>
-        <TabsContent value="history" className="mt-6">
-          <SongList songs={historySongs} />
-        </TabsContent>
-      </Tabs>
+      {/* === ACTION BUTTONS === */}
+      <div className="px-6 py-8 max-w-4xl mx-auto">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            onClick={() => router.push("/artist/become")}
+            className="bg-purple-500 hover:bg-purple-400 text-black font-semibold px-6 py-3 rounded-full transition flex items-center gap-2 justify-center"
+          >
+            <UserPlus size={20} />
+            Become an Artist
+          </button>
+
+          <button
+            onClick={() => router.push("/profile/settings")}
+            className="bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white font-semibold px-6 py-3 rounded-full transition flex items-center gap-2 justify-center"
+          >
+            <Settings size={20} />
+            Account Settings
+          </button>
+        </div>
+      </div>
+    
+      <Footer />
+
     </div>
-  );
+
+  )
 }
