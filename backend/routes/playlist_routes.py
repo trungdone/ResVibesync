@@ -7,8 +7,9 @@ from pydantic import BaseModel
 
 from models.playlist import PlaylistCreate
 from services.playlist_service import PlaylistService
-
-
+from models.playlist import PlaylistUpdate
+from fastapi import Depends
+from bson import ObjectId
 
 router = APIRouter()
 playlist_service = PlaylistService()
@@ -88,3 +89,44 @@ async def remove_song_from_playlist(playlist_id: str, data: SongIdRequest):
         return {"message": "Song removed from playlist successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error removing song: {str(e)}")
+
+
+@router.patch("/playlists/{playlist_id}")
+async def update_playlist(playlist_id: str, update_data: PlaylistUpdate):
+    try:
+        _id = ObjectId(playlist_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid playlist ID format")
+
+    update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    result = playlists_collection.update_one(
+        {"_id": _id},
+        {"$set": update_dict}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+
+    updated_playlist = playlists_collection.find_one({"_id": _id})
+    updated_playlist["id"] = str(updated_playlist["_id"])
+    del updated_playlist["_id"]
+    return updated_playlist
+
+
+
+
+@router.delete("/playlists/{playlist_id}")
+async def delete_playlist(playlist_id: str):
+    try:
+        result = playlists_collection.delete_one({"_id": ObjectId(playlist_id)})
+
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Playlist not found")
+
+        return {"message": "Playlist deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting playlist: {str(e)}")

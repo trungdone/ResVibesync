@@ -164,12 +164,21 @@ const handlePlayClick = (song) => {
                           }`}
                         />
                       </div>
-                      <div>
+                      <div className="relative group">
                         <Link href={`/song/${song.id}`} className="text-gray-100 font-medium hover:underline">
                           {song.title}
                         </Link>
                         <div className="text-sm text-gray-400">{song.artist}</div>
+
+                        {/* Tooltip */}
+                        <div className="absolute z-50 hidden group-hover:block top-full left-0 mt-2 w-64 p-3 bg-zinc-800 text-white text-xs rounded shadow-lg border border-zinc-700">
+                          <div><strong>Artist:</strong> {song.artist}</div>
+                          <div><strong>Album:</strong> {song.album || "Unknown"}</div>
+                          <div><strong>Genre:</strong> {Array.isArray(song.genre) ? song.genre.join(", ") : song.genre || "Unknown"}</div>
+                          <div><strong>Release Year:</strong> {song.releaseYear || "Unknown"}</div>
+                        </div>
                       </div>
+
                     </div>
                   </td>
                   <td className="p-3 text-gray-400 hidden md:table-cell">

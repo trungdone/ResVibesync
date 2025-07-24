@@ -25,6 +25,7 @@ class PlaylistUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     songIds: Optional[List[str]] = None
+    isPublic: Optional[bool] = None
     coverArt: Optional[str] = None
 
 class PlaylistInDB(PlaylistBase):

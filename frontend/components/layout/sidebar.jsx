@@ -10,6 +10,8 @@ import CustomCreatePlaylistModal from "@/components/playlist/CustomCreatePlaylis
 import { getAllPlaylists } from "@/lib/api/playlists";
 import { useAuth } from "@/context/auth-context";
 import { useMusic } from "@/context/music-context";
+import { setPlaylistRefreshFunction } from "@/lib/api/playlist-refresh";;
+
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -31,17 +33,22 @@ export default function Sidebar() {
   useEffect(() => {
     if (!user?.id) return;
 
-    async function loadPlaylists() {
+    const loadPlaylists = async () => {
       try {
         const playlistsData = await getAllPlaylists(user.id);
         setPlaylists(playlistsData || []);
       } catch (e) {
         console.error("Failed to load playlists:", e);
       }
-    }
+    };
 
     loadPlaylists();
+
+    // ✅ Register global trigger
+    setPlaylistRefreshFunction(loadPlaylists);
   }, [user]);
+
+
 
   const isActive = (path) => pathname === path;
 

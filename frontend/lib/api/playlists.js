@@ -96,3 +96,16 @@ export async function getAllPublicPlaylists() {
   if (!res.ok) throw new Error("Failed to fetch public playlists");
   return res.json();
 }
+
+// ✅ Cập nhật playlist
+export async function updatePlaylist(playlistId, payload) {
+  const res = await fetch(`${API_BASE}/playlists/${playlistId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to update playlist");
+  return data;
+}
