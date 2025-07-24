@@ -1,4 +1,7 @@
+
 // app/page.jsx
+
+
 import FeaturedSection from "@/components/featured-section";
 import NewReleases from "@/components/home/new-releases";
 import RecommendedPlaylists from "@/components/playlist/recommended-playlists";
@@ -12,8 +15,13 @@ export default function Home() {
   return (
     <div className="space-y-8 pb-24">
       <FeaturedSection />
+
       <RecommendSection />
       {/* <RecommendedPlaylists /> */}
+
+      <RecommendedPlaylists />
+      <RecommendSection />
+
       <NewReleases />
       <TopArtists />
       <HotAlbums />

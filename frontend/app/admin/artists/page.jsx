@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchArtists } from "@/lib/api";
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+import { ArtistList } from "./ArtistList"; // ✅ import đúng thư mục hiện tại
+import { ArtistForm } from "./ArtistForm";
+=======
+>>>>>>> main
 import { ArtistList } from "./ArtistList";
 import { ArtistForm } from "./ArtistForm";
 import { ArtistView } from "./ArtistView";
@@ -50,13 +57,25 @@ const Alert = ({ type, message, onClose }) => {
     </motion.div>
   );
 };
+<<<<<<< HEAD
+=======
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
 
 export default function AdminArtistsPage() {
   const [artists, setArtists] = useState([]);
   const [selectedArtist, setSelectedArtist] = useState(null);
   const [showForm, setShowForm] = useState(false);
+<<<<<<< HEAD
   const [showView, setShowView] = useState(false);
   const [alert, setAlert] = useState(null);
+=======
+<<<<<<< HEAD
+=======
+  const [showView, setShowView] = useState(false);
+  const [alert, setAlert] = useState(null);
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
   const router = useRouter();
 
   useEffect(() => {
@@ -64,6 +83,13 @@ export default function AdminArtistsPage() {
   }, []);
 
   const loadArtists = async () => {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    const data = await fetchArtists();
+    setArtists(data?.artists || []);
+=======
+>>>>>>> main
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${BASE_API_URL}/admin/artists`, {
@@ -75,6 +101,10 @@ export default function AdminArtistsPage() {
       console.error("Failed to load artists", err);
       setAlert({ type: "error", message: "Failed to load artists" });
     }
+<<<<<<< HEAD
+=======
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
   };
 
   const handleAdd = () => {
@@ -88,15 +118,41 @@ export default function AdminArtistsPage() {
   };
 
   const handleView = (artist) => {
+<<<<<<< HEAD
     setSelectedArtist(artist);
     setShowView(true);
     setShowForm(false);
+=======
+<<<<<<< HEAD
+    alert(`Viewing artist: ${artist.name}`);
+    // Hoặc điều hướng đến trang chi tiết: router.push(`/admin/artists/${artist.id}`);
+=======
+    setSelectedArtist(artist);
+    setShowView(true);
+    setShowForm(false);
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
   };
 
   const handleDelete = async (id) => {
     const confirmed = confirm("Are you sure you want to delete this artist?");
     if (!confirmed) return;
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    const res = await fetch(`/api/artists/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: "Bearer admin-token", // thay bằng token thật
+      },
+    });
+    if (res.ok) {
+      loadArtists();
+    } else {
+      console.error("Failed to delete artist:", await res.text());
+=======
+>>>>>>> main
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${BASE_API_URL}/admin/artists/${id}`, {
@@ -125,10 +181,42 @@ export default function AdminArtistsPage() {
         type: "error",
         message: "An error occurred while deleting",
       });
+<<<<<<< HEAD
+=======
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
     }
   };
 
   const handleFormSubmit = async (artistData) => {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    const method = selectedArtist ? "PUT" : "POST";
+    const url = selectedArtist ? `/api/artists/${selectedArtist.id}` : `/api/artists`;
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer admin-token",
+      },
+      body: JSON.stringify(artistData),
+    });
+
+    if (res.ok) {
+      setShowForm(false);
+      setSelectedArtist(null);
+      await loadArtists();
+    } else {
+      console.error("Failed to save artist:", await res.text());
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+=======
+>>>>>>> main
     const token = localStorage.getItem("token");
     const method = selectedArtist ? "PUT" : "POST";
     const url = selectedArtist
@@ -184,6 +272,10 @@ export default function AdminArtistsPage() {
           />
         )}
       </AnimatePresence>
+<<<<<<< HEAD
+=======
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
       {showForm ? (
         <ArtistForm
           artist={selectedArtist}
@@ -193,6 +285,11 @@ export default function AdminArtistsPage() {
             setSelectedArtist(null);
           }}
         />
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> main
       ) : showView ? (
         <ArtistView
           artist={selectedArtist}
@@ -201,6 +298,10 @@ export default function AdminArtistsPage() {
             setSelectedArtist(null);
           }}
         />
+<<<<<<< HEAD
+=======
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
       ) : (
         <ArtistList
           artists={artists}
@@ -212,4 +313,12 @@ export default function AdminArtistsPage() {
       )}
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+<<<<<<< HEAD
+}
+=======
+}
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main

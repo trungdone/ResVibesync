@@ -27,6 +27,7 @@ class SongService:
             genre=song.get("genre", []),
             coverArt=song.get("coverArt", ""),
             audioUrl=song.get("audioUrl", ""),
+            lyrics_lrc=song.get("lyrics_lrc", None),
             artistId=str(song.get("artistId", "")),
             created_at=song.get("created_at", datetime.utcnow()),
             updated_at=song.get("updated_at", None)
@@ -82,6 +83,7 @@ class SongService:
         return self.song_repository.update(song_id, update_data)
 
     def delete_song(self, song_id: str) -> bool:
+
         return self.song_repository.delete(song_id)
     
 
@@ -108,5 +110,15 @@ class SongService:
     
 
 
+
+
+
+        return self.song_repository.delete(song_id)
+    
+    def get_songs_by_genre(self, genre: str, page: int = 1, limit: int = 50) -> List[SongInDB]:
+      if not genre:
+        raise ValueError("Genre is required")
+      songs = self.song_repository.find_by_genre(genre, page, limit)
+      return [self._map_to_song_in_db(song) for song in songs]
 
 

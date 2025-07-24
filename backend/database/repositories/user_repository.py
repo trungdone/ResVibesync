@@ -73,9 +73,24 @@ class UserRepository:
 
     @staticmethod
     def delete(user_id: str) -> bool:
+
         try:
             obj_id = ObjectId(user_id)
         except (InvalidId, TypeError):
             return False
         result = users_collection.delete_one({"_id": obj_id})
-        return result.deleted_count > 0
+
+    # Try delete by string-based id first
+        result = users_collection.delete_one({"_id": user_id})
+        if result.deleted_count > 0:
+           return True
+
+    # Fallback to ObjectId
+        try:
+           obj_id = ObjectId(user_id)
+           result = users_collection.delete_one({"_id": obj_id})
+           return result.deleted_count > 0
+        except (InvalidId, TypeError):
+           return False
+
+

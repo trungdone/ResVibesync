@@ -8,8 +8,8 @@ import { Heart, Share2, MoreHorizontal, Play } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 import { fetchSongById, fetchSongs, fetchArtistById } from "@/lib/api";
 import SongList from "@/components/songs/song-list";
-
 import Link from "next/link";
+import LyricsDisplay from "@/components/lyrics/LyricsDisplay";
 
 
 
@@ -20,7 +20,9 @@ export default function SongDetailPage({ params }) {
   const [relatedSongs, setRelatedSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { playSong } = useMusic();
+
+  const { playSong,currentSong, isPlaying } = useMusic();
+
 
   useEffect(() => {
     async function loadSong() {
@@ -115,12 +117,21 @@ export default function SongDetailPage({ params }) {
         </div>
       </div>
 
+
       <div>
         <h3 className="text-xl font-semibold mb-4">Lyrics</h3>
         <div className="bg-white/5 rounded-lg p-6 whitespace-pre-line">
           {song.lyrics || "Lyrics are not available for this song."}
         </div>
       </div>
+
+
+    {currentSong?.id === song.id && song.lyrics_lrc && (
+    <div className="mt-8">
+    <h3 className="text-xl font-semibold mb-4">Lyrics</h3>
+    <LyricsDisplay lrc={song.lyrics_lrc} songId={song.id} />
+    </div>
+     )}
 
       <div>
         <h3 className="text-xl font-semibold mb-4">More from {artist?.name || song.artist}</h3>

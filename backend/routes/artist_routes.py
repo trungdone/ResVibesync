@@ -4,6 +4,7 @@ from services.artist_service import ArtistService
 from services.follow_service import FollowService
 from models.artist import ArtistCreate, ArtistUpdate
 from auth import get_current_user, get_optional_user
+from bson import ObjectId, errors
 
 router = APIRouter(prefix="/artists", tags=["artists"])
 
@@ -92,3 +93,36 @@ async def unfollow_artist(id: str, user: dict = Depends(get_current_user)):
 
     follow_service.unfollow(user["id"], id)
     return {"message": "Unfollowed successfully"}
+
+
+# ✅ NEW: GET songs by artist ID
+@router.get("/{id}/songs", response_model=dict)
+async def get_songs_by_artist(id: str):
+    try:
+        # Chuyển id thành ObjectId nếu hợp lệ
+        try:
+            object_id = ObjectId(id)
+        except errors.InvalidId:
+            object_id = None
+
+        # Truy vấn bằng cả str và ObjectId (nếu có)
+        songs = artist_service.song_repo.find_by_artist_id(object_id or id)
+
+        # Encode kết quả
+        encoded_songs = []
+        for song in songs:
+            if "_id" in song:
+                song["_id"] = str(song["_id"])
+            if "artistId" in song:
+                song["artistId"] = str(song["artistId"])
+            if "created_at" in song:
+                song["created_at"] = song["created_at"].isoformat()
+
+            encoded_song = jsonable_encoder(song)
+            encoded_song["id"] = song["_id"]
+            encoded_songs.append(encoded_song)
+
+        return {"songs": encoded_songs}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not fetch songs: {str(e)}")

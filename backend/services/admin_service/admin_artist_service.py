@@ -17,12 +17,15 @@ class AdminArtistService:
                 name=artist.get("name", ""),
                 bio=artist.get("bio", ""),
                 image=artist.get("image"),
-                songs=[],  # load if needed
+                songs=[],
                 albums=[],
                 genres=artist.get("genres", []),
                 followers=artist.get("followers", 0),
+                follower_ids=artist.get("follower_ids", []),
                 created_at=artist.get("created_at", datetime.utcnow()),
                 updated_at=artist.get("updated_at", datetime.utcnow()),
+                created_by_admin=artist.get("created_by_admin", False),
+                claimed_by_user_id=artist.get("claimed_by_user_id")
             )
             for artist in artists
         ]
@@ -40,10 +43,13 @@ class AdminArtistService:
             followers=artist.get("followers", 0),
             songs=[],
             albums=[],
+            follower_ids=artist.get("follower_ids", []),
             created_at=artist.get("created_at", datetime.utcnow()),
             updated_at=artist.get("updated_at", datetime.utcnow()),
+            created_by_admin=artist.get("created_by_admin", False),
+            claimed_by_user_id=artist.get("claimed_by_user_id")
         )
-
+    
     def search_artists(self, name: str) -> list[ArtistInDB]:
         artists = self.repo.find_by_name(name)
         return [
@@ -52,26 +58,33 @@ class AdminArtistService:
                 name=artist.get("name", ""),
                 bio=artist.get("bio", ""),
                 image=artist.get("image"),
-                songs=[],  # load if needed
+                songs=[],
                 albums=[],
                 genres=artist.get("genres", []),
                 followers=artist.get("followers", 0),
+                follower_ids=artist.get("follower_ids", []),
                 created_at=artist.get("created_at", datetime.utcnow()),
                 updated_at=artist.get("updated_at", datetime.utcnow()),
+                created_by_admin=artist.get("created_by_admin", False),
+                claimed_by_user_id=artist.get("claimed_by_user_id")
             )
             for artist in artists
         ]
 
     def create_artist(self, data: ArtistCreate) -> str:
-        # Kiểm tra trùng lặp tên
         existing_artist = self.repo.find_by_name(data.name)
         if existing_artist:
             raise ValueError("Artist with this name already exists")
-
+        
         artist_dict = data.dict()
         artist_dict["created_at"] = datetime.utcnow()
         artist_dict["updated_at"] = datetime.utcnow()
         artist_dict["followers"] = artist_dict.get("followers", 0)
+
+        # ✅ Flag to indicate admin-created artist
+        artist_dict["created_by_admin"] = True
+        artist_dict["claimed_by_user_id"] = None
+
         new_artist = self.repo.insert_one(artist_dict)
         return str(new_artist.inserted_id)
 
@@ -83,4 +96,13 @@ class AdminArtistService:
 
     def delete_artist(self, artist_id: str) -> bool:
         result = self.repo.delete_one(ObjectId(artist_id))
-        return result.deleted_count > 0
+
+        if result.deleted_count > 0:
+            from database.db import albums_collection
+            albums_collection.update_many(
+                {"artist_id": str(artist_id)},
+                {"$set": {"artist_id": None}}
+            )
+            print(f"Cleared artist_id from all albums of artist {artist_id}")
+            return True
+        return False

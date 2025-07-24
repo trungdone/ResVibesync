@@ -66,3 +66,23 @@ export async function fetchHistory(userId) {
   return await res.json();
 }
 
+
+export async function fetchLikedSongs() {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch("http://localhost:8000/user/me/liked-songs", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch liked songs");
+
+  return await res.json(); 
+}
+
+
+
+
+
+

@@ -1,6 +1,7 @@
 from database.db import songs_collection
 from bson import ObjectId
 from bson.errors import InvalidId
+from bson.regex import Regex
 from typing import List, Optional, Dict
 from datetime import datetime
 
@@ -36,7 +37,6 @@ class SongRepository:
     @staticmethod
     def find_by_artist_id(artist_id: ObjectId) -> List[Dict]:
         try:
-            # Thử tìm với cả chuỗi và ObjectId
             songs = songs_collection.find({
                 "$or": [
                     {"artistId": str(artist_id)},
@@ -76,6 +76,7 @@ class SongRepository:
             ]
         })
         return result.deleted_count > 0
+
     
 
     @staticmethod
@@ -93,3 +94,57 @@ class SongRepository:
         except Exception as e:
             print(f"Error in get_all_songs_simple: {str(e)}")
             return []
+
+
+    @staticmethod
+    def find_by_album_id(album_id: str, artist_id: str) -> List[dict]:
+        return list(
+            songs_collection.find({
+                "album": album_id,
+                "$or": [
+                    {"artistId": artist_id},
+                    {"artistId": ObjectId(artist_id)}
+                ]
+            })
+        )
+
+    @staticmethod
+    def search_by_title(keyword: str, limit: int = 20) -> List[Dict]:
+        try:
+            regex = Regex(keyword, "i")  # 'i' = case-insensitive
+            cursor = (
+                songs_collection.find({"title": {"$regex": regex}})
+                .sort("title", 1)
+                .limit(limit)
+            )
+            results = list(cursor)
+            print(f"search_by_title -> {len(results)} hit(s) for '{keyword}'")
+            return results
+        except Exception as e:
+            print(f"Error in search_by_title: {e}")
+            raise ValueError(f"Failed to search songs: {e}")
+
+    @staticmethod
+    def find_by_ids(song_ids: List[str]) -> List[Dict]:
+        try:
+            object_ids = [ObjectId(id) for id in song_ids]
+            songs = songs_collection.find({"_id": {"$in": object_ids}})
+            return list(songs)
+        except Exception as e:
+            print(f"Error in find_by_ids: {e}")
+            raise ValueError("Failed to find songs by IDs")
+
+    @staticmethod
+    def find_by_genre(genre: str, page: int = 1, limit: int = 50) -> List[Dict]:
+        try:
+            genres = [g.strip() for g in genre.split(" and ")] if " and " in genre else [genre]
+            query = {"genre": {"$all": genres}} if genres else {}
+            print(f"Querying database with: {query}")
+            cursor = songs_collection.find(query).skip((page - 1) * limit).limit(limit)
+            songs = list(cursor)
+            print(f"Found {len(songs)} songs for genre '{genre}' (page={page}, limit={limit})")
+            return songs
+        except Exception as e:
+            print(f"Error in find_by_genre: {str(e)}")
+            raise ValueError(f"Failed to query songs by genre: {str(e)}")
+

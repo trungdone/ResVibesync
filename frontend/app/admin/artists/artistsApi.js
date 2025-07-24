@@ -1,7 +1,11 @@
 <<<<<<< HEAD
 // frontend/lib/artists.js
 =======
+<<<<<<< HEAD
 >>>>>>> origin/main
+=======
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
 import axios from "axios";
 import axiosRetry from "axios-retry";
 
@@ -102,4 +106,8 @@ export async function createArtist(data) {
   });
   return res.data;
 }
+<<<<<<< HEAD
 >>>>>>> origin/main
+=======
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main

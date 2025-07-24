@@ -4,50 +4,49 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import SongList from "@/components/songs/song-list";
 import PlaylistGrid from "@/components/playlist/playlist-grid";
-import { getAllPlaylists } from "@/lib/api/playlists";
-import { useAuth } from "@/context/auth-context"; // add this
+import { fetchPlaylists, fetchSongs } from "@/lib/api";
 
 export default function LibraryPage() {
-    const { user } = useAuth(); // 👈 get user info
-
   const [playlists, setPlaylists] = useState([]);
   const [likedSongs, setLikedSongs] = useState([]);
   const [historySongs, setHistorySongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const token = localStorage.getItem("token");
+  const [token, setToken] = useState(null);
 
   useEffect(() => {
-    if (!token) {
+    const storedToken = localStorage.getItem("token");
+    if (!storedToken) {
       router.push("/signin");
     } else {
-      async function loadData() {
-        try {
-          setLoading(true);
-
-          // Gọi playlist
-          const playlistData = await getAllPlaylists(user?.id);
-          setPlaylists(playlistData || []);
-
-          // Gọi song
-          const songData = await getAllPlaylists();
-          // Kiểm tra và xử lý songData
-          const songs = Array.isArray(songData) ? songData : songData?.songs || [];
-          if (songs.length === 0) {
-            console.warn("No songs data available.");
-          }
-          setLikedSongs(songs.slice(0, 10));
-          setHistorySongs(songs.slice(10, 20));
-        } catch (err) {
-          console.error("Failed to load library:", err);
-          router.push("/signin");
-        } finally {
-          setLoading(false);
-        }
-      }
-
-      loadData();
+      setToken(storedToken); // ← NEW: set token after loading
     }
+  }, [router]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function loadData() {
+      try {
+        setLoading(true);
+
+        const playlistData = await fetchPlaylists();
+        setPlaylists(playlistData || []);
+
+        const songData = await fetchSongs();
+        const songs = Array.isArray(songData) ? songData : songData?.songs || [];
+
+        setLikedSongs(songs.slice(0, 10));
+        setHistorySongs(songs.slice(10, 20));
+      } catch (err) {
+        console.error("Failed to load library:", err);
+        router.push("/signin");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
   }, [token, router]);
 
   if (!token || loading) {
@@ -65,7 +64,7 @@ export default function LibraryPage() {
 
       <div>
         <h2 className="text-xl font-semibold mb-2">Liked Songs</h2>
-        {/* <SongList songs={likedSongs} /> */}
+        <SongList songs={likedSongs} />
       </div>
 
       <div>

@@ -27,11 +27,30 @@ export async function createArtist(data) {
   });
 }
 
-// ✅ Gợi ý nghệ sĩ (trừ artistId hiện tại)
+// ✅ Gợi ý nghệ sĩ (loại bỏ chính artist hiện tại)
 export async function fetchSuggestedArtists(artistId, token = null) {
-  const data = await fetchArtists(token); // <-- Sử dụng phiên bản có token
-  const artists = Array.isArray(data.artists) ? data.artists : [];
+  const data = await fetchArtists(token); // gọi lại hàm fetchArtists phía trên
+  const artists = Array.isArray(data?.artists)
+    ? data.artists
+    : Array.isArray(data)
+    ? data
+    : [];
   return artists.filter((a) => a.id !== artistId && a._id !== artistId).slice(0, 5);
+}
+
+// ✅ Gợi ý nghệ sĩ theo tên gần giống
+export async function fetchArtistSuggestions(query) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(
+    `http://localhost:8000/api/artists/similar?query=${encodeURIComponent(query)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  const data = await res.json();
+  return data;
 }
 
 // ✅ Follow nghệ sĩ

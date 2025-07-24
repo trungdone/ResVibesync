@@ -52,6 +52,51 @@ export default function AlbumForm({ album, onSubmit, onCancel, onSuccess }) {
   });
 
   useEffect(() => {
+  if (album) {
+    setSelectedArtist(album.artist_id);
+    setValue("artist_id", album.artist_id);
+  }
+}, [album, setValue]);
+
+
+useEffect(() => {
+  const draft = localStorage.getItem("albumFormDraft");
+  if (draft) {
+    try {
+      const parsedDraft = JSON.parse(draft);
+      reset(parsedDraft);
+      setSelectedSongs(parsedDraft.songs || []);
+      setGenres(parsedDraft.genres || []);
+      setPreview(parsedDraft.cover_art || null);
+      setSelectedArtist(parsedDraft.artist_id || "");
+
+      localStorage.setItem("albumFormDraft", JSON.stringify(parsedDraft));
+
+      // 👇 thêm đoạn fetch để hiện danh sách Selected Songs
+      if (parsedDraft.songs && parsedDraft.songs.length > 0) {
+        fetchSongsByIds(parsedDraft.songs)
+          .then((songsData) => {
+            setSongs(songsData);
+          })
+          .catch((err) => {
+            console.error("Fetch songs from draft failed", err);
+          });
+      }
+    } catch (err) {
+      console.error("Failed to parse draft", err);
+    }
+  }
+}, [reset]);
+
+// Lưu vào localStorage ngay khi form thay đổi
+useEffect(() => {
+  const subscription = watch((value) => {
+    localStorage.setItem("albumFormDraft", JSON.stringify(value));
+  });
+  return () => subscription.unsubscribe();
+}, [watch]);
+
+  useEffect(() => {
     if (album) {
       reset({
         title: album.title || "",
@@ -200,10 +245,16 @@ export default function AlbumForm({ album, onSubmit, onCancel, onSuccess }) {
     if (album) {
     await updateAlbum(album.id, data);
     toast({ title: "Success", description: "Album updated successfully" });
+    localStorage.removeItem("albumFormDraft");
+      reset({ title: "",artist_id: "", release_year: 0, genres: [], cover_art: "",songs: [],
+  });setPreview(null); setSelectedSongs([]); setGenres([]); setSelectedArtist("");
     onSubmit(data, { type: "success", message: "Album updated successfully!" });
     } else {
     await createAlbum(data);
     toast({ title: "Success", description: "Album created successfully" });
+    localStorage.removeItem("albumFormDraft");
+      reset({ title: "",artist_id: "", release_year: 0, genres: [], cover_art: "",songs: [],
+  });setPreview(null); setSelectedSongs([]); setGenres([]); setSelectedArtist("");
     onSubmit(data, { type: "success", message: "Album created successfully!" });
     }
 
@@ -258,25 +309,22 @@ export default function AlbumForm({ album, onSubmit, onCancel, onSuccess }) {
                 </div>
                 <div>
                   <Label htmlFor="artist_id" className="text-sm font-medium text-gray-300">Artist</Label>
-                  <select
-                    id="artist_id"
-                    {...register("artist_id", { required: "Artist is required" })}
-                    value={selectedArtist}
-                    onChange={(e) => {
-                      setSelectedArtist(e.target.value);
-                      setValue("artist_id", e.target.value);
-                    }}
-                    className="mt-1 w-full bg-gray-800 border-gray-700 rounded-md p-2 text-gray-300 focus:ring-green-500 focus:border-green-500"
-                  >
-                    <option value="">Select an artist</option>
-                    {Array.isArray(artists) && artists.length > 0 ? (
-                      artists.map((artist) => (
-                        <option key={artist.id} value={artist.id}>{artist.name}</option>
-                      ))
-                    ) : (
-                      <option value="" disabled>No artists available</option>
-                    )}
-                  </select>
+              <select
+              id="artist_id"
+              {...register("artist_id", { required: "Artist is required" })}
+              value={selectedArtist}
+              onChange={(e) => {
+               setSelectedArtist(e.target.value);
+               setValue("artist_id", e.target.value);
+               }}
+              className="mt-1 w-full bg-gray-800 border-gray-700 rounded-md p-2 text-foreground focus:ring-green-500 focus:border-green-500"
+               >
+              <option value="">Select an artist</option>
+              {artists.map((artist) => (
+              <option key={artist.id} value={artist.id}>{artist.name}</option>
+             ))}
+             </select>
+
                   {errors.artist_id && <p className="text-sm text-red-400 mt-1">{errors.artist_id.message}</p>}
                 </div>
                 <div>
@@ -356,6 +404,19 @@ export default function AlbumForm({ album, onSubmit, onCancel, onSuccess }) {
                     }}
                     className="mt-1 text-foreground bg-gray-800 border-gray-700 focus:ring-green-500 focus:border-green-500 rounded-md p-2"
                   />
+                  {/* Nút mở folder coverArt */}
+                  <button
+                  type="button"
+                  onClick={() =>
+                  window.open(
+                  "https://console.cloudinary.com/app/c-b0dc706a40de477a78984f32205e70/assets/media_library/folders/home?view_mode=mosaic",
+                  "_blank"
+                   )
+                  }
+                  className="mt-2 inline-flex items-center text-sm text-blue-400 hover:text-blue-300"
+                  >
+                 🖼️ Browse Cloudinary CoverArt Folder
+                </button>
                 </div>
                 {(preview || imageValue) && (
                   <div className="relative mt-3 w-fit">
@@ -441,6 +502,7 @@ export default function AlbumForm({ album, onSubmit, onCancel, onSuccess }) {
                             <TableCell className="py-2 px-4 text-gray-300">{song.genre || "N/A"}</TableCell>
                             <TableCell className="py-2 px-4">
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleAddSong(song.id)}
@@ -464,6 +526,7 @@ export default function AlbumForm({ album, onSubmit, onCancel, onSuccess }) {
                   {totalPages > 1 && (
                     <div className="flex justify-center gap-4 p-3 bg-gray-800/50 rounded-b-lg">
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -476,6 +539,7 @@ export default function AlbumForm({ album, onSubmit, onCancel, onSuccess }) {
                         Page {currentPage} of {totalPages}
                       </span>
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
@@ -533,6 +597,7 @@ export default function AlbumForm({ album, onSubmit, onCancel, onSuccess }) {
                             <TableCell className="py-2 px-4 text-gray-300">{song.genre || "N/A"}</TableCell>
                             <TableCell className="py-2 px-4">
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRemoveSong(song.id)}

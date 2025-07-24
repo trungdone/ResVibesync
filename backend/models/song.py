@@ -1,10 +1,9 @@
-from pydantic import BaseModel, validator, HttpUrl
+from pydantic import BaseModel, validator, HttpUrl, Field
 from datetime import datetime
 from typing import Optional, List
 from bson import ObjectId
-
-
 from pydantic import Field
+
 
 
 
@@ -19,6 +18,7 @@ class SongBase(BaseModel):
     genre: List[str]
     coverArt: Optional[HttpUrl] = None
     audioUrl: Optional[HttpUrl] = None
+    lyrics_lrc: Optional[str] = None  # ✅ giữ lại trường lyrics_lrc
     artistId: str
 
     @validator("releaseYear")
@@ -33,8 +33,10 @@ class SongBase(BaseModel):
             raise ValueError("Duration must be positive")
         return v
 
+
 class SongCreate(SongBase):
     pass
+
 
 class SongUpdate(BaseModel):
     title: Optional[str] = None
@@ -45,16 +47,17 @@ class SongUpdate(BaseModel):
     genre: Optional[List[str]] = None
     coverArt: Optional[HttpUrl] = None
     audioUrl: Optional[HttpUrl] = None
+    lyrics_lrc: Optional[str] = None  # ✅ giữ lại
     artistId: Optional[str] = None
+
 
 class SongInDB(SongBase):
     id: str
     created_at: datetime
     updated_at: Optional[datetime] = None
+    lyrics_lrc: Optional[str] = None  # ✅ giữ lại cho SongInDB
 
     class Config:
         arbitrary_types_allowed = True
-
         json_encoders = {ObjectId: str}
-        
 

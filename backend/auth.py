@@ -44,7 +44,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             "email": user.email,
             "role": user.role,
             "avatar": user.avatar,
-            "banned": user.banned
+            "banned": user.banned,
+            "verified": user.verified,
+            "artist_id": getattr(user, "artist_id", None)
         }
     except JWTError:
         raise credentials_exception
@@ -54,6 +56,13 @@ async def get_current_admin(token: str = Depends(oauth2_scheme)):
     user = await get_current_user(token)
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin access only")
+    return user
+
+
+async def get_current_artist(token: str = Depends(oauth2_scheme)):
+    user = await get_current_user(token)
+    if user["role"] != "artist":
+        raise HTTPException(status_code=403, detail="Artist access only")
     return user
 
 
@@ -83,3 +92,4 @@ async def get_optional_user(token: str = Security(bearer_scheme)):
         }
     except JWTError:
         return None
+
