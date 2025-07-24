@@ -1,7 +1,6 @@
 {
-  "/discovery/page": "app/discovery/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/signin/page": "app/signin/page.js",
   "/profile/page": "app/profile/page.js",
-  "/song/[id]/page": "app/song/[id]/page.js",
-  "/search/page": "app/search/page.js",
-  "/signin/page": "app/signin/page.js"
+  "/discovery/page": "app/discovery/page.js"
 }

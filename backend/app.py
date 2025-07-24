@@ -30,11 +30,15 @@ app.mount("/audio", StaticFiles(directory="audio"), name="audio")
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Cho phép frontend Next.js chạy local truy cập
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://localhost:3002"  # Thêm dòng này
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Include các router với prefix tương ứng
 app.include_router(song_routes.router, prefix="/api")
