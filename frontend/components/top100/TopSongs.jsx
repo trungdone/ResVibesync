@@ -17,6 +17,7 @@ export default function TopSongs() {
 
         const vietnameseSongs = data.filter((song) => {
           const genre = song.genre;
+          
           if (typeof genre === "string") {
             return genre.toLowerCase() === "vietnamese";
           }

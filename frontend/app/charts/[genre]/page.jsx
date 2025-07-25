@@ -2,9 +2,10 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import TopSong from "../../../components/top100/TopSongs"; // VPOP
-import GenreSongList from "../../../components/top100/GenreSongList"; // USUK, KPOP,...
-import TopUsuk from "../../../components/top100/TopUsuk"; 
-import Edm from "../../../components/top100/Edm"; 
+import GenreSongList from "../../../components/top100/GenreSongList"; // KPOP
+import TopUsuk from "../../../components/top100/TopUsuk"; // USUK
+import Edm from "../../../components/top100/Edm"; // EDM
+import Love from "../../../components/top100/TopLove"; // Love
 
 // ==== DỮ LIỆU BÀI HÁT ====
 const songs = [
@@ -60,11 +61,21 @@ const songs = [
 // ==== Mapping đường dẫn => genre trong dữ liệu ====
 const genreMapping = {
   vpop: "Vietnamese",
-  usuk: "UK-US",
+  usuk: "English",
   kpop: "Korean",
   edm: "EDM",
   bolero: "Bolero",
-  young: "Pop"
+  young: "Pop",
+  love: "Love"
+};
+
+// ==== Mapping đường dẫn => Component hiển thị ====
+const genreComponentMap = {
+  vpop: TopSong,
+  usuk: TopUsuk,
+  kpop: GenreSongList,
+  edm: Edm,
+  love: Love
 };
 
 export default function GenrePage() {
@@ -73,7 +84,8 @@ export default function GenrePage() {
 
   useEffect(() => {
     if (genre) {
-      const mappedGenre = genreMapping[genre.toLowerCase()];
+      const genreKey = genre.toLowerCase();
+      const mappedGenre = genreMapping[genreKey];
       if (mappedGenre) {
         const result = songs.filter((song) =>
           song.genre.some((g) => g.toLowerCase() === mappedGenre.toLowerCase())
@@ -85,36 +97,17 @@ export default function GenrePage() {
     }
   }, [genre]);
 
-  // ==== Xử lý component hiển thị ====
-  let content;
-  const genreLower = genre?.toLowerCase();
-
-  if (genreLower === "vpop") {
-    content = <TopSong songs={filteredSongs} />;
-  } else if (
-    genreLower === "usuk" ||
-    genreLower === "kpop" ||
-    genreLower === "bolero" ||
-    genreLower === "young"
-  ) {
-    content = <GenreSongList songs={filteredSongs} />;
-  } else if (
-    genreLower === "topusuk" 
-  ) {
-    content = <TopUsuk songs={filteredSongs} />;
-  }else if (
-    genreLower === "edm" 
-  ) {
-    content = <Edm songs={filteredSongs} />;
-  }
-   else {
-    content = <p>Không tìm thấy thể loại "{genre}"</p>;
-  }
+  const genreKey = genre?.toLowerCase();
+  const SelectedComponent = genreComponentMap[genreKey];
 
   return (
     <section className="p-4">
       <h1 className="text-3xl font-bold capitalize mb-6">Top 100 {genre}</h1>
-      {content}
+      {SelectedComponent ? (
+        <SelectedComponent songs={filteredSongs} />
+      ) : (
+        <p>Không tìm thấy thể loại "{genre}"</p>
+      )}
     </section>
   );
 }

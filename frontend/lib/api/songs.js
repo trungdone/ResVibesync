@@ -68,20 +68,25 @@ export async function fetchSongsByKeyword(keyword) {
 }
 
 
-export async function fetchSongsByGenre(genreName) {
+
+
+export async function fetchSongsByGenre(genreName, limit = 500) {
   try {
-    const query = genreName ? new URLSearchParams({ genre: genreName }).toString() : "";
-    const endpoint = `/api/songs${query ? `?${query}` : ""}`;
-    console.log(`Fetching songs for genre: ${genreName}`);
+    const params = new URLSearchParams({ genre: genreName, limit });
+    const endpoint = `/api/songs?${params.toString()}`;
+    console.log(`Fetching songs for genre: ${genreName}, limit: ${limit}`);
+    
     const data = await apiFetch(endpoint, { fallbackOnError: { songs: [], total: 0 } });
+    
     if (!data || !Array.isArray(data.songs)) {
       console.error("Invalid response from API:", data);
       return { songs: [], total: 0 };
     }
-    console.log(`Received ${data.songs.length} songs`);
+
+    console.log(`✅ Received ${data.songs.length} songs for genre ${genreName}`);
     return data;
   } catch (error) {
-    console.error(`Error fetching songs by genre (${genreName}):`, error);
+    console.error(`❌ Error fetching songs by genre (${genreName}):`, error);
     return { songs: [], total: 0 };
   }
 }

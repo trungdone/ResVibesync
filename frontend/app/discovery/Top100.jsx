@@ -47,10 +47,10 @@ export default function Top100() {
         href: "/charts/usuk"
       },
       {
-        title: "Top 100 Young Music",
+        title: "Top 100 LOVE Music",
         subtitle: "Quang Hung MasterD...",
         image: availableImages[6], // save-your-tears-album-cover.png
-        href: "/charts/young"
+        href: "/charts/love"
       }
     ];
 

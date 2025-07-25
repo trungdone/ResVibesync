@@ -7,6 +7,9 @@ from auth import get_current_user
 from pydantic import BaseModel
 from typing import List
 import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/songs", tags=["songs"])
 
@@ -27,18 +30,23 @@ async def get_songs(
     service: SongService = Depends(get_song_service)
 ):
     try:
-        print(f"Request received for genre: {genre}, page: {page}, limit: {limit}")
+        logger.info(f"📥 Request received | genre: {genre}, page: {page}, limit: {limit}")
+
         if genre:
             songs = service.get_songs_by_genre(genre, page, limit)
+            logger.info(f"🎯 Found {len(songs)} songs for genre '{genre}'")
+            for idx, song in enumerate(songs, 1):
+                logger.info(f"{idx:02d}. 🎵 {song.title} | Genres: {song.genre}")
         else:
             songs = service.get_all_songs(sort, limit)
-        print(f"Returning {len(songs)} songs")
+            logger.info(f"📦 Found {len(songs)} songs (no genre filter)")
+
         return {"songs": songs, "total": len(songs)}
     except ValueError as e:
-        print(f"ValueError: {str(e)}")
+        logger.error(f"❌ ValueError: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        print(f"Error: {str(e)}")
+        logger.error(f"💥 Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 # ✅ GET one song by ID

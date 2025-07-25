@@ -17,11 +17,6 @@ export default function Home() {
       <FeaturedSection />
 
       <RecommendSection />
-      {/* <RecommendedPlaylists /> */}
-
-      <RecommendedPlaylists />
-      <RecommendSection />
-
       <NewReleases />
       <TopArtists />
       <HotAlbums />

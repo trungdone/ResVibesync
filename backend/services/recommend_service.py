@@ -5,74 +5,103 @@ from database.db import (
 from bson import ObjectId
 from datetime import datetime
 from collections import Counter
+from typing import List
 
 
-def get_recommendations(user_id: str, limit: int = 10):
+def get_recommendations(user_id: str, limit: int = 10) -> List[dict]:
     user_oid = ObjectId(user_id)
 
-    # Bước 1: Lấy lịch sử nghe gần nhất
+    # 1. Lấy toàn bộ lịch sử nghe
     history = list(song_history_collection.find({"user_id": user_oid}))
     if not history:
-        print("❌ No history found")
+        print("❌ No listening history found.")
         return []
 
-    latest = sorted(history, key=lambda x: x.get("timestamp", datetime.min), reverse=True)[0]
-    recent_song = songs_collection.find_one({"_id": latest["song_id"]})
-    if not recent_song:
-        print("❌ Recent song not found in DB")
-        return []
+    # 2. Tính tần suất và lấy 5 bài gần nhất
+    song_id_counter = Counter([entry["song_id"] for entry in history])
+    history_sorted = sorted(history, key=lambda x: x.get("timestamp", datetime.min), reverse=True)
+    recent_entries = history_sorted[:5]
 
-    # Bước 2: Trích thông tin từ bài vừa nghe
-    recent_artist = recent_song.get("artist")
-    recent_genres = recent_song.get("genre", [])
-    recent_tags = recent_song.get("tags", [])
+    recent_songs = [songs_collection.find_one({"_id": entry["song_id"]}) for entry in recent_entries]
+    recent_songs = [s for s in recent_songs if s]
 
-    print(f"🎧 Recent song: {recent_song['title']} by {recent_artist}")
-    print(f"🎼 Genres: {recent_genres}")
-    print(f"🏷️ Tags: {recent_tags}")
+    # 3. Tổng hợp đặc điểm từ các bài gần nhất
+    all_artists = set()
+    all_genres = set()
+    all_tags = set()
 
-    # Bước 3: Xây query
+    for song in recent_songs:
+        if "artist" in song:
+            all_artists.add(song["artist"])
+        all_genres.update(song.get("genre", []))
+        all_tags.update(song.get("tags", []))
+
+    # 4. Lấy danh sách nghệ sĩ được like hoặc follow
+    liked_artist_ids = set()
+    followed_artist_ids = set()
+
+    for doc in likes_collection.find({"user_id": user_oid, "type": "artist"}):
+        liked_artist_ids.add(doc["item_id"])
+
+    for doc in follows_collection.find({"user_id": user_oid, "type": "artist"}):
+        followed_artist_ids.add(doc["item_id"])
+
+    # Lấy tên nghệ sĩ từ ID
+    artist_ids = list(liked_artist_ids | followed_artist_ids)
+    if artist_ids:
+        liked_followed_artists = artists_collection.find({"_id": {"$in": artist_ids}})
+        for artist in liked_followed_artists:
+            all_artists.add(artist["name"])
+
+    print(f"🎧 Collected from recent + liked/followed:")
+    print(f" - Artists: {list(all_artists)}")
+    print(f" - Genres: {list(all_genres)}")
+    print(f" - Tags: {list(all_tags)}")
+
+    # 5. Truy vấn gợi ý từ đặc điểm trên
     query = {
         "$or": [
-            {"artist": recent_artist},
-            {"genre": {"$in": recent_genres}},
-            {"tags": {"$in": recent_tags}},
+            {"artist": {"$in": list(all_artists)}},
+            {"genre": {"$in": list(all_genres)}},
+            {"tags": {"$in": list(all_tags)}}
         ]
     }
+    raw_candidates = list(songs_collection.find(query).limit(limit * 4))
 
-    # Bước 4: Trừ các bài đã nghe nhiều
-    song_id_counter = Counter([h["song_id"] for h in history])
-    recommended_raw = list(songs_collection.find(query).limit(limit * 3))
+    # 6. Loại bỏ bài đã nghe gần nhất (đặc biệt bài cuối cùng vừa nghe)
+    recently_played_ids = {entry["song_id"] for entry in recent_entries}
+    seen_ids = set(song_id_counter.keys())
+
     recommended = []
-
-    for song in recommended_raw:
-        count = song_id_counter.get(song["_id"], 0)
-        if count < 3 and song["_id"] != recent_song["_id"]:
+    for song in raw_candidates:
+        song_id = song["_id"]
+        if song_id in recently_played_ids:
+            continue  # ❌ bỏ bài vừa nghe
+        if song_id not in seen_ids or song_id_counter[song_id] < 3:
             recommended.append(song)
-            if len(recommended) >= limit:
-                break
+        if len(recommended) >= limit:
+            break
 
-    # Bước 5: Fallback nếu thiếu
+    # 7. Fallback nếu chưa đủ
     if len(recommended) < limit:
         remaining = limit - len(recommended)
-        print(f"➕ Not enough recommendations, adding {remaining} latest songs")
+        print(f"➕ Not enough recommendations, adding {remaining} fallback songs.")
 
-        # Fallback 1: Bài hát mới nhất theo releaseYear
-        latest_songs = list(songs_collection.find()
-                            .sort("releaseYear", -1)
-                            .limit(remaining))
-        recommended += latest_songs
+        fallback = list(songs_collection.find({
+            "_id": {"$nin": list(recently_played_ids)}
+        }).sort("releaseYear", -1).limit(remaining))
 
-        # Fallback 2: Random nếu vẫn thiếu
+        recommended.extend(fallback)
+
         if len(recommended) < limit:
             more_random = list(songs_collection.aggregate([
+                {"$match": {"_id": {"$nin": list(recently_played_ids)}}},
                 {"$sample": {"size": limit - len(recommended)}}
             ]))
-            recommended += more_random
+            recommended.extend(more_random)
 
-    # Log kết quả
     print(f"✅ Final recommendations ({len(recommended)}):")
-    for i, s in enumerate(recommended):
-        print(f"  #{i+1}: {s['title']} by {s['artist']}")
+    for i, s in enumerate(recommended[:limit]):
+        print(f"  #{i + 1}: {s['title']} by {s['artist']}")
 
-    return recommended
+    return recommended[:limit]
