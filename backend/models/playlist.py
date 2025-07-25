@@ -39,3 +39,20 @@ class PlaylistInDB(PlaylistBase):
 
 class PlaylistCreate(PlaylistBase):
     pass
+
+
+class PlaylistOut(BaseModel):
+    id: str
+    title: str
+    description: Optional[str]
+    creator: str
+    songIds: Optional[List[str]]
+    coverArt: Optional[str]
+    isPublic: Optional[bool]
+    isShuffle: Optional[bool]
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+        json_encoders = {ObjectId: str}

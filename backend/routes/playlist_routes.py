@@ -130,3 +130,24 @@ async def delete_playlist(playlist_id: str):
         return {"message": "Playlist deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting playlist: {str(e)}")
+
+
+from models.playlist import PlaylistOut  # Add this import at the top
+
+@router.delete("/playlists/{playlist_id}/songs/{song_id}", response_model=PlaylistOut)
+async def remove_song_from_playlist(playlist_id: str, song_id: str):
+    playlist = playlists_collection.find_one({"_id": ObjectId(playlist_id)})
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+
+    updated = playlists_collection.find_one_and_update(
+        {"_id": ObjectId(playlist_id)},
+        {"$pull": {"songIds": song_id}},
+        return_document=True
+    )
+
+    if updated:
+        updated["id"] = str(updated["_id"])
+        del updated["_id"]
+        return updated
+    raise HTTPException(status_code=500, detail="Failed to update playlist")

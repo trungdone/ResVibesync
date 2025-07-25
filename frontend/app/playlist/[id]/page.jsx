@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { Heart, MoreHorizontal, Play, Search } from "lucide-react";
 
+import PlaylistSongList from "@/components/songs/playlist-song-list"; // merged smart version
 import SongList from "@/components/songs/search_playlistpage"; // merged smart version
 import ArtistCard from "@/components/artist/ArtistCard";
 import PlaylistModal from "@/components/playlist/PlaylistModal";
@@ -223,7 +224,7 @@ export default function PlaylistPage({ params: paramsPromise }) {
             )}
           </>
         ) : (
-          <SongList songs={validSongs} />
+          <PlaylistSongList songs={validSongs} playlistId={playlist.id} />
         )}
       </div>
 
