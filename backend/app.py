@@ -14,6 +14,7 @@ from routes import notifications_routes
 from routes.search_routes import router as search_routes
 import os
 
+
 load_dotenv()
 app = FastAPI()
 
