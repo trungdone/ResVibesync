@@ -114,7 +114,7 @@ const handlePlayClick = (song) => {
         }}
       >
         <table className="w-full text-sm text-left">
-          <thead className="sticky top-0 bg-zinc-800 z-10">
+          <thead className=" top-0 bg-zinc-800 z-10">
             <tr className="border-b border-zinc-700 text-gray-200 uppercase">
               <th className="p-3 w-10 font-medium">#</th>
               <th className="p-3 font-medium">Title</th>
