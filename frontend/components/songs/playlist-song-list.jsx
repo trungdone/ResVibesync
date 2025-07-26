@@ -1,61 +1,71 @@
 "use client";
 
+import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import axios from "axios";
 import { Play, Heart, MoreHorizontal, X } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
 import { useMusic } from "@/context/music-context";
 import { formatDuration } from "@/lib/utils";
 import WaveBars from "@/components/ui/WaveBars";
 import SongActionsMenu from "./song-actions-menu";
-import axios from "axios";
 
+export default function PlaylistSongList({ songs: propSongs, playlistId }) {
+  const {
+    playSong, isPlaying, currentSong, togglePlayPause,
+    nextSong, setSongs, setContext, setContextId
+  } = useMusic();
 
-export default function PlaylistSongList({ songs: propSongs,playlistId  }) {
-  const { playSong, isPlaying, currentSong, togglePlayPause, nextSong,  setSongs,
-  setContext,setContextId } = useMusic();
   const [optionsOpenId, setOptionsOpenId] = useState(null);
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
   const [likedSongs, setLikedSongs] = useState(new Set());
+
   const moreBtnRefs = useRef({});
   const popupRef = useRef(null);
-  const observerRef = useRef(null);
   const scrollRef = useRef(null);
   const scrollTimeoutRef = useRef(null);
 
-const handlePlayClick = (song) => {
-  if (!song) return;
+  const token = useMemo(() => localStorage.getItem("token"), []);
 
-  // Nếu đang phát bài đó thì toggle play/pause
-  if (currentSong?.id?.toString() === song.id?.toString()) {
-    togglePlayPause();
-  } else {
-    // Gán toàn bộ danh sách hiện tại làm context
-    setSongs(propSongs);
-    setContext("new-releases"); 
-    setContextId(null); 
-    playSong(song); 
-  }
-};
+  const selectedSong = useMemo(() =>
+    propSongs.find((s) => s.id === optionsOpenId), [propSongs, optionsOpenId]
+  );
 
+  const handlePlayClick = (song) => {
+    if (!song) return;
+    const isSameSong = currentSong?.id?.toString() === song.id?.toString();
+    if (isSameSong) togglePlayPause();
+    else {
+      setSongs(propSongs);
+      setContext("new-releases");
+      setContextId(null);
+      playSong(song);
+    }
+  };
 
-const handleRemoveFromPlaylist = async (songId) => {
-  try {
-    const res = await axios.delete(`http://localhost:8000/api/playlists/${playlistId}/songs/${songId}`);
+  const handleRemoveFromPlaylist = async (songId) => {
+    try {
+      await axios.delete(`http://localhost:8000/api/playlists/${playlistId}/songs/${songId}`);
+      setOptionsOpenId(null);
+      window.location.reload(); // Optionally: update local state
+    } catch (err) {
+      console.error("❌ Remove failed:", err);
+    }
+  };
 
-    // Optionally: update local UI
-    console.log("Removed song:", res.data);
-    setOptionsOpenId(null);
-    window.location.reload(); // or update the local songs state
-  } catch (err) {
-    console.error("Failed to remove song:", err);
-  }
-};
-
-  const toggleLike = (songId) => {
-    const updated = new Set(likedSongs);
-    updated.has(songId) ? updated.delete(songId) : updated.add(songId);
-    setLikedSongs(updated);
+  const toggleLike = async (songId) => {
+    try {
+      const updated = new Set(likedSongs);
+      const url = likedSongs.has(songId)
+        ? `unlike` : `like`;
+      await axios.post(`http://localhost:8000/api/likes/${songId}/${url}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      likedSongs.has(songId) ? updated.delete(songId) : updated.add(songId);
+      setLikedSongs(updated);
+    } catch (err) {
+      console.error("❌ Like toggle failed:", err);
+    }
   };
 
   const toggleOptions = (songId) => {
@@ -70,6 +80,31 @@ const handleRemoveFromPlaylist = async (songId) => {
     setOptionsOpenId(songId);
   };
 
+  const handleCopyLink = () => {
+    const link = `${window.location.origin}/song/${optionsOpenId}`;
+    navigator.clipboard.writeText(link)
+      .then(() => alert("✅ Link copied"))
+      .catch(() => alert("❌ Copy failed"));
+    setOptionsOpenId(null);
+  };
+
+  useEffect(() => {
+    const fetchLikedSongs = async () => {
+      try {
+        const promises = propSongs.map(song =>
+          axios.get(`http://localhost:8000/api/likes/is-liked/${song.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).then(res => res.data.isLiked ? song.id : null)
+        );
+        const results = await Promise.all(promises);
+        setLikedSongs(new Set(results.filter(Boolean)));
+      } catch (err) {
+        console.error("❌ Fetch liked songs error:", err);
+      }
+    };
+    if (token) fetchLikedSongs();
+  }, [propSongs, token]);
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (popupRef.current && !popupRef.current.contains(e.target)) {
@@ -81,39 +116,16 @@ const handleRemoveFromPlaylist = async (songId) => {
   }, []);
 
   useEffect(() => {
-    if (!optionsOpenId || !moreBtnRefs.current[optionsOpenId]) return;
+    const el = moreBtnRefs.current[optionsOpenId];
+    if (!optionsOpenId || !el) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) setOptionsOpenId(null);
-      },
-      { threshold: 0.1 }
-    );
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) setOptionsOpenId(null);
+    }, { threshold: 0.1 });
 
-    observer.observe(moreBtnRefs.current[optionsOpenId]);
-    observerRef.current = observer;
+    observer.observe(el);
     return () => observer.disconnect();
   }, [optionsOpenId]);
-
-  const handleLyrics = () => setOptionsOpenId(null);
-  const handlePlayNext = () => {
-    nextSong();
-    setOptionsOpenId(null);
-  };
-
-  const handleBlock = () => {
-    console.log(`Block song ${optionsOpenId}`);
-    setOptionsOpenId(null);
-  };
-
-  const handleCopyLink = () => {
-    const link = `${window.location.origin}/song/${optionsOpenId}`;
-    navigator.clipboard
-      .writeText(link)
-      .then(() => alert("✅ Link copied to clipboard!"))
-      .catch(() => alert("❌ Failed to copy link."));
-    setOptionsOpenId(null);
-  };
 
   return (
     <div className="bg-zinc-900 shadow-md rounded-xl overflow-hidden relative border border-zinc-700">
@@ -121,7 +133,7 @@ const handleRemoveFromPlaylist = async (songId) => {
         ref={scrollRef}
         className="max-h-[360px] overflow-y-auto scroll-container transition-all duration-300 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900"
         onScroll={() => {
-          if (scrollRef.current) scrollRef.current.classList.add("scrolling");
+          scrollRef.current?.classList.add("scrolling");
           clearTimeout(scrollTimeoutRef.current);
           scrollTimeoutRef.current = setTimeout(() => {
             scrollRef.current?.classList.remove("scrolling");
@@ -129,7 +141,7 @@ const handleRemoveFromPlaylist = async (songId) => {
         }}
       >
         <table className="w-full text-sm text-left">
-          <thead className=" top-0 bg-zinc-800 z-10">
+          <thead className="top-0 bg-zinc-800 z-10">
             <tr className="border-b border-zinc-700 text-gray-200 uppercase">
               <th className="p-3 w-10 font-medium">#</th>
               <th className="p-3 font-medium">Title</th>
@@ -146,9 +158,7 @@ const handleRemoveFromPlaylist = async (songId) => {
               return (
                 <tr
                   key={song.id}
-                  className={`group border-b border-zinc-700 hover:bg-zinc-800 transition ${
-                    isCurrent ? "bg-zinc-800" : ""
-                  }`}
+                  className={`group border-b border-zinc-700 hover:bg-zinc-800 transition ${isCurrent ? "bg-zinc-800" : ""}`}
                 >
                   <td className="p-3 text-gray-400">
                     <div className="w-6 h-6 flex items-center justify-center relative">
@@ -174,9 +184,7 @@ const handleRemoveFromPlaylist = async (songId) => {
                           src={song.coverArt || "/placeholder.svg"}
                           alt={song.title || "Cover"}
                           fill
-                          className={`object-cover ${
-                            isCurrent && isPlaying ? "animate-pulse" : ""
-                          }`}
+                          className={`object-cover ${isCurrent && isPlaying ? "animate-pulse" : ""}`}
                         />
                       </div>
                       <div className="relative group">
@@ -184,32 +192,15 @@ const handleRemoveFromPlaylist = async (songId) => {
                           {song.title}
                         </Link>
                         <div className="text-sm text-gray-400">{song.artist}</div>
-
-                        {/* Tooltip */}
-                        <div className="absolute z-50 hidden group-hover:block top-full left-0 mt-2 w-64 p-3 bg-zinc-800 text-white text-xs rounded shadow-lg border border-zinc-700">
-                          <div><strong>Artist:</strong> {song.artist}</div>
-                          <div><strong>Album:</strong> {song.album || "Unknown"}</div>
-                          <div><strong>Genre:</strong> {Array.isArray(song.genre) ? song.genre.join(", ") : song.genre || "Unknown"}</div>
-                          <div><strong>Release Year:</strong> {song.releaseYear || "Unknown"}</div>
-                        </div>
                       </div>
-
                     </div>
                   </td>
-                  <td className="p-3 text-gray-400 hidden md:table-cell">
-                    {song.album || "N/A"}
-                  </td>
-                  <td className="p-3 text-gray-400 hidden md:table-cell">
-                    {formatDuration(song.duration || 0)}
-                  </td>
+                  <td className="p-3 text-gray-400 hidden md:table-cell">{song.album || "N/A"}</td>
+                  <td className="p-3 text-gray-400 hidden md:table-cell">{formatDuration(song.duration || 0)}</td>
                   <td className="p-3 text-right">
                     <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => toggleLike(song.id)}
-                        className={`hover:text-white ${
-                          isLiked ? "text-pink-500" : "text-gray-400"
-                        }`}
-                      >
+                      <button onClick={() => toggleLike(song.id)}
+                        className={`hover:text-white ${isLiked ? "text-pink-500" : "text-gray-400"}`}>
                         <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
                       </button>
                       <button
@@ -228,8 +219,7 @@ const handleRemoveFromPlaylist = async (songId) => {
         </table>
       </div>
 
-      {/* Popup menu */}
-      {optionsOpenId && (
+      {optionsOpenId && selectedSong && (
         <div
           ref={popupRef}
           className="fixed w-72 bg-zinc-800 text-white rounded-xl shadow-xl z-50 p-4 animate-fadeIn"
@@ -238,19 +228,15 @@ const handleRemoveFromPlaylist = async (songId) => {
           <div className="flex gap-3">
             <div className="w-14 h-14 relative rounded overflow-hidden flex-shrink-0">
               <Image
-                src={propSongs.find((s) => s.id === optionsOpenId)?.coverArt || "/placeholder.svg"}
+                src={selectedSong.coverArt || "/placeholder.svg"}
                 alt="cover"
                 fill
                 className="object-cover"
               />
             </div>
             <div className="flex-1">
-              <div className="font-semibold text-base truncate">
-                {propSongs.find((s) => s.id === optionsOpenId)?.title}
-              </div>
-              <div className="text-sm text-gray-400">
-                {propSongs.find((s) => s.id === optionsOpenId)?.artist}
-              </div>
+              <div className="font-semibold text-base truncate">{selectedSong.title}</div>
+              <div className="text-sm text-gray-400">{selectedSong.artist}</div>
             </div>
             <button onClick={() => setOptionsOpenId(null)} className="text-gray-400 hover:text-white">
               <X size={16} />
@@ -259,19 +245,9 @@ const handleRemoveFromPlaylist = async (songId) => {
 
           <div className="mt-4 border-t border-zinc-700 pt-3">
             <ul className="text-sm mt-2 space-y-2">
-                <li
-                onClick={() => handleRemoveFromPlaylist(optionsOpenId)}
-                className="hover:bg-zinc-700 rounded p-2 cursor-pointer"
-                >
-                Remove this from playlist
-                </li>
-    
-
+              <li onClick={() => handleRemoveFromPlaylist(optionsOpenId)} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Remove from playlist</li>
               <li onClick={handleCopyLink} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Copy Link</li>
-            <SongActionsMenu
-              song={propSongs.find((s) => s.id === optionsOpenId)}
-              onClose={() => setOptionsOpenId(null)}
-            />              
+              <SongActionsMenu song={selectedSong} onClose={() => setOptionsOpenId(null)} />
             </ul>
           </div>
         </div>

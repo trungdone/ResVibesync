@@ -15,6 +15,8 @@ import { getPlaylistById, deletePlaylist } from "@/lib/api/playlists";
 import { getSongById } from "@/lib/api/songs";
 import { triggerPlaylistRefresh } from "@/lib/api/playlist-refresh";
 import { searchAll } from "@/lib/api/search";
+import LikePlaylistButton from "@/components/liked-button/LikePlaylistButton";
+
 
 export default function PlaylistPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
@@ -136,9 +138,8 @@ export default function PlaylistPage({ params: paramsPromise }) {
             <button className="bg-green-500 hover:bg-green-600 text-black px-6 py-2 rounded-full font-bold shadow">
               Play
             </button>
-            <button className="text-white hover:text-pink-400">
-              <Heart className="w-6 h-6" />
-            </button>
+            <LikePlaylistButton playlistId={playlist._id} />
+
             {/* Dropdown */}
             <div className="relative" ref={menuRef}>
               <button onClick={() => setShowMenu(!showMenu)} className="text-white hover:text-gray-300">

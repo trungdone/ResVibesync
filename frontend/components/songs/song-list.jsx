@@ -8,6 +8,7 @@ import { useMusic } from "@/context/music-context";
 import { formatDuration } from "@/lib/utils";
 import WaveBars from "@/components/ui/WaveBars";
 import SongActionsMenu from "./song-actions-menu";
+import LikeSongButton from "@/components/liked-button/LikeButton";
 
 
 export default function SongList({ songs: propSongs }) {
@@ -189,14 +190,8 @@ const handlePlayClick = (song) => {
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => toggleLike(song.id)}
-                        className={`hover:text-white ${
-                          isLiked ? "text-pink-500" : "text-gray-400"
-                        }`}
-                      >
-                        <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
-                      </button>
+                      <LikeSongButton songId={song.id} />
+
                       <button
                         ref={(el) => (moreBtnRefs.current[song.id] = el)}
                         onClick={() => toggleOptions(song.id)}
