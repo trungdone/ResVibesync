@@ -1,4 +1,3 @@
-# ✅ FILE: models/song.py
 from pydantic import BaseModel, validator, HttpUrl
 from datetime import datetime
 from typing import Optional, List
@@ -9,7 +8,7 @@ class SongBase(BaseModel):
     artist: str
     album: Optional[str] = None
     releaseYear: int
-    duration: int  # seconds
+    duration: int  # in seconds
     genre: List[str]
     coverArt: Optional[HttpUrl] = None
     audioUrl: Optional[HttpUrl] = None
@@ -18,7 +17,8 @@ class SongBase(BaseModel):
 
     @validator("releaseYear")
     def validate_release_year(cls, v):
-        if v < 1900 or v > datetime.now().year + 1:
+        current_year = datetime.now().year
+        if v < 1900 or v > current_year + 1:
             raise ValueError("Invalid release year")
         return v
 
@@ -52,4 +52,4 @@ class SongInDB(SongBase):
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
-        fields = {"id": "_id"}  # Map _id từ Mongo sang id
+        fields = {"id": "_id"}  # Map MongoDB _id to id

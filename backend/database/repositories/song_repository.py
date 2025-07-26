@@ -37,12 +37,15 @@ class SongRepository:
             cursor = songs_collection.find(query or {}, SongRepository.PROJECTION)
             if sort:
                 cursor = cursor.sort(sort, 1)
-            if skip:
+            if skip is not None:
                 cursor = cursor.skip(skip)
             if limit:
                 cursor = cursor.limit(limit)
-            return list(cursor)
+            songs = list(cursor)
+            print(f"[find_all] Found {len(songs)} songs with query={query}, sort={sort}, skip={skip}, limit={limit}")
+            return songs
         except Exception as e:
+            print(f"[find_all] Error: {str(e)}")
             raise ValueError(f"Failed to query songs: {str(e)}")
 
     @staticmethod
@@ -62,6 +65,7 @@ class SongRepository:
                 ]
             }, SongRepository.PROJECTION))
         except Exception as e:
+            print(f"[find_by_artist_id] Error: {str(e)}")
             raise ValueError(f"Failed to query songs by artist_id: {str(e)}")
 
     @staticmethod
@@ -109,12 +113,15 @@ class SongRepository:
     def search_by_title(keyword: str, limit: int = 20) -> List[Dict]:
         try:
             regex = Regex(keyword, "i")
-            return list(
-                songs_collection.find({"title": {"$regex": regex}}, SongRepository.PROJECTION)
-                .sort("title", 1)
-                .limit(limit)
-            )
+            cursor = songs_collection.find(
+                {"title": {"$regex": regex}},
+                SongRepository.PROJECTION
+            ).sort("title", 1).limit(limit)
+            results = list(cursor)
+            print(f"[search_by_title] Found {len(results)} result(s) for '{keyword}'")
+            return results
         except Exception as e:
+            print(f"[search_by_title] Error: {e}")
             raise ValueError(f"Failed to search songs: {e}")
 
     @staticmethod
@@ -126,6 +133,7 @@ class SongRepository:
                 SongRepository.PROJECTION
             ))
         except Exception as e:
+            print(f"[find_by_ids] Error: {e}")
             raise ValueError("Failed to find songs by IDs")
 
     @staticmethod
@@ -137,18 +145,20 @@ class SongRepository:
             ]
             return list(songs_collection.aggregate(pipeline))
         except Exception as e:
+            print(f"[get_random_songs] Error: {e}")
             raise ValueError(f"Error in get_random_songs: {e}")
 
     @staticmethod
     def get_random_songs_by_region(region: str, limit: int = 12) -> List[Dict]:
         try:
-            match_stage = {"$match": get_region_query(region)}
-            sample_stage = {"$sample": {"size": limit}}
-            project_stage = {"$project": SongRepository.PROJECTION}
-
-            pipeline = [match_stage, sample_stage, project_stage]
+            pipeline = [
+                {"$match": get_region_query(region)},
+                {"$sample": {"size": limit}},
+                {"$project": SongRepository.PROJECTION}
+            ]
             return list(songs_collection.aggregate(pipeline))
         except Exception as e:
+            print(f"[get_random_songs_by_region] Error: {e}")
             raise ValueError(f"Error in get_random_songs_by_region: {e}")
 
     @staticmethod
@@ -167,4 +177,19 @@ class SongRepository:
                 cursor = cursor.limit(limit)
             return list(cursor)
         except Exception as e:
+            print(f"[find_by_region] Error: {e}")
             raise ValueError(f"Failed to find songs by region: {e}")
+
+    @staticmethod
+    def find_by_genre(genre: str, page: int = 1, limit: int = 50) -> List[Dict]:
+        try:
+            genres = [g.strip() for g in genre.split(" and ")] if " and " in genre else [genre]
+            query = {"genre": {"$all": genres}} if genres else {}
+            print(f"[find_by_genre] Query: {query}")
+            cursor = songs_collection.find(query, SongRepository.PROJECTION).skip((page - 1) * limit).limit(limit)
+            songs = list(cursor)
+            print(f"[find_by_genre] Found {len(songs)} songs for genre '{genre}' (page={page}, limit={limit})")
+            return songs
+        except Exception as e:
+            print(f"[find_by_genre] Error: {str(e)}")
+            raise ValueError(f"Failed to query songs by genre: {str(e)}")

@@ -8,7 +8,6 @@ from random import shuffle
 from models.song import SongCreate, SongUpdate, SongInDB
 from database.repositories.song_repository import SongRepository
 from database.repositories.artist_repository import ArtistRepository
-from services.genre_service import get_region_query
 
 
 class SongService:
@@ -27,7 +26,7 @@ class SongService:
             id=str(song.get("_id", "")),
             title=song.get("title", ""),
             artist=artist_name,
-            album=song.get("album"),
+            album=song.get("album", ""),
             releaseYear=song.get("releaseYear", 0),
             duration=song.get("duration", 0),
             genre=song.get("genre", []),
@@ -36,7 +35,7 @@ class SongService:
             lyrics_lrc=song.get("lyrics_lrc"),
             artistId=str(artist_id) if artist_id else "",
             created_at=song.get("created_at", datetime.utcnow()),
-            updated_at=song.get("updated_at")
+            updated_at=song.get("updated_at", None)
         )
 
     @staticmethod
@@ -102,28 +101,25 @@ class SongService:
         raw_songs = self.song_repository.get_random_songs(limit=limit * 3)
 
         if region:
-            region_keyword = "vietnamese" if region.lower() == "vietnamese" else "international"
-            if region_keyword == "vietnamese":
-                raw_songs = [
-                    s for s in raw_songs if any("vietnamese" in g.lower() for g in s.get("genre", []))
-                ]
-            else:
-                raw_songs = [
-                    s for s in raw_songs if not any("vietnamese" in g.lower() for g in s.get("genre", []))
-                ]
+            is_vietnamese = region.lower() == "vietnamese"
+            raw_songs = [
+                s for s in raw_songs
+                if any("vietnamese" in g.lower() for g in s.get("genre", [])) == is_vietnamese
+            ]
 
         shuffle(raw_songs)
         return [self._map_to_song_in_db(song) for song in raw_songs[:limit]]
 
-    def get_songs_by_region(
-        self,
-        region: str,
-        limit: Optional[int] = 12,
-        refresh: bool = False
-    ) -> List[SongInDB]:
-        raw_songs = self.song_repository.get_random_songs_by_region(region, limit=limit)
+    def get_songs_by_region(self, region: str, limit: int = 12) -> List[SongInDB]:
+        raw_songs = self.song_repository.get_random_songs_by_region(region=region, limit=limit)
         return [self._map_to_song_in_db(song) for song in raw_songs]
 
     def get_random_songs_by_region(self, region: Optional[str], limit: int = 12) -> List[SongInDB]:
         raw_songs = self.song_repository.get_random_songs_by_region(region=region, limit=limit)
         return [self._map_to_song_in_db(song) for song in raw_songs]
+
+    def get_songs_by_genre(self, genre: str, page: int = 1, limit: int = 50) -> List[SongInDB]:
+        if not genre:
+            raise ValueError("Genre is required")
+        songs = self.song_repository.find_by_genre(genre, page, limit)
+        return [self._map_to_song_in_db(song) for song in songs]
