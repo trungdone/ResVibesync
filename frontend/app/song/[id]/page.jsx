@@ -9,6 +9,8 @@ import { formatDuration } from "@/lib/utils";
 import { fetchSongById, fetchSongs, fetchArtistById } from "@/lib/api";
 import SongList from "@/components/songs/song-list";
 import LyricsDisplay from "@/components/lyrics/LyricsDisplay";
+import LikeSongButton from "@/components/liked-button/LikeButton";
+
 
 export default function SongDetailPage({ params }) {
   const { id } = use(params); // Unwrap params
@@ -87,9 +89,7 @@ export default function SongDetailPage({ params }) {
               <Play size={18} /> Play
             </button>
 
-            <button className="btn-secondary flex items-center gap-2">
-              <Heart size={18} /> Like
-            </button>
+            <LikeSongButton songId={song.id} />
 
             <button className="btn-secondary flex items-center gap-2">
               <Share2 size={18} /> Share
