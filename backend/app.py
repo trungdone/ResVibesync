@@ -13,6 +13,7 @@ from routes.master_artist_routes.artist_album_routes import router as artist_alb
 from routes import notifications_routes
 from routes.search_routes import router as search_routes
 import os
+from routes.likes import router as likes_router  # <-- Add this import
 
 
 load_dotenv()
@@ -43,6 +44,7 @@ app.include_router(admin_album_router, prefix="/api")
 app.include_router(artist_request_router)
 app.include_router(search_routes, prefix="/api")
 app.include_router(notifications_routes.router)
+app.include_router(likes_router, prefix="/api")  # <-- Replace the invalid line with this
 
 
 app.include_router(artist_profile_router, prefix="/api")
