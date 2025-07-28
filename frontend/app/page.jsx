@@ -5,7 +5,8 @@ import TopArtists from "@/components/home/top-artists";
 import RecommendSection from "@/components/home/recommend-section";
 import ListeningHistory from "@/components/home/ListeningHistory";
 import HotAlbums from "@/components/home/hot-albums";
-import Footer from "@/components/layout/footer"
+import Footer from "@/components/layout/footer";
+import ArtistFanSection from "@/components/home/ArtistFanSection/ArtistFanSection";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
       <RecommendSection />
       <NewReleases />
       <TopArtists />
+      <ArtistFanSection/>
       <HotAlbums />
       <ListeningHistory />
       <Footer />
