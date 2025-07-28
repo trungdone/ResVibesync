@@ -47,7 +47,7 @@ export default function PlaylistSongList({ songs: propSongs, playlistId }) {
     try {
       await axios.delete(`http://localhost:8000/api/playlists/${playlistId}/songs/${songId}`);
       setOptionsOpenId(null);
-      window.location.reload(); // Optionally: update local state
+      window.location.reload();
     } catch (err) {
       console.error("❌ Remove failed:", err);
     }
@@ -56,8 +56,7 @@ export default function PlaylistSongList({ songs: propSongs, playlistId }) {
   const toggleLike = async (songId) => {
     try {
       const updated = new Set(likedSongs);
-      const url = likedSongs.has(songId)
-        ? `unlike` : `like`;
+      const url = likedSongs.has(songId) ? `unlike` : `like`;
       await axios.post(`http://localhost:8000/api/likes/${songId}/${url}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -128,10 +127,10 @@ export default function PlaylistSongList({ songs: propSongs, playlistId }) {
   }, [optionsOpenId]);
 
   return (
-    <div className="bg-zinc-900 shadow-md rounded-xl overflow-hidden relative border border-zinc-700">
+    <div className="bg-purple-950 shadow-md rounded-xl overflow-hidden relative border border-purple-800">
       <div
         ref={scrollRef}
-        className="max-h-[360px] overflow-y-auto scroll-container transition-all duration-300 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900"
+        className="max-h-[360px] overflow-y-auto scroll-container transition-all duration-300 scrollbar-thin scrollbar-thumb-purple-800 scrollbar-track-purple-950"
         onScroll={() => {
           scrollRef.current?.classList.add("scrolling");
           clearTimeout(scrollTimeoutRef.current);
@@ -141,8 +140,8 @@ export default function PlaylistSongList({ songs: propSongs, playlistId }) {
         }}
       >
         <table className="w-full text-sm text-left">
-          <thead className="top-0 bg-zinc-800 z-10">
-            <tr className="border-b border-zinc-700 text-gray-200 uppercase">
+          <thead className="top-0 bg-purple-900 z-10">
+            <tr className="border-b border-purple-700 text-purple-100 uppercase">
               <th className="p-3 w-10 font-medium">#</th>
               <th className="p-3 font-medium">Title</th>
               <th className="p-3 font-medium hidden md:table-cell">Album</th>
@@ -158,9 +157,9 @@ export default function PlaylistSongList({ songs: propSongs, playlistId }) {
               return (
                 <tr
                   key={song.id}
-                  className={`group border-b border-zinc-700 hover:bg-zinc-800 transition ${isCurrent ? "bg-zinc-800" : ""}`}
+                  className={`group border-b border-purple-800 hover:bg-purple-900 transition ${isCurrent ? "bg-purple-900" : ""}`}
                 >
-                  <td className="p-3 text-gray-400">
+                  <td className="p-3 text-purple-400">
                     <div className="w-6 h-6 flex items-center justify-center relative">
                       {isCurrent && isPlaying ? (
                         <WaveBars />
@@ -188,25 +187,25 @@ export default function PlaylistSongList({ songs: propSongs, playlistId }) {
                         />
                       </div>
                       <div className="relative group">
-                        <Link href={`/song/${song.id}`} className="text-gray-100 font-medium hover:underline">
+                        <Link href={`/song/${song.id}`} className="text-purple-100 font-medium hover:underline">
                           {song.title}
                         </Link>
-                        <div className="text-sm text-gray-400">{song.artist}</div>
+                        <div className="text-sm text-purple-400">{song.artist}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="p-3 text-gray-400 hidden md:table-cell">{song.album || "N/A"}</td>
-                  <td className="p-3 text-gray-400 hidden md:table-cell">{formatDuration(song.duration || 0)}</td>
+                  <td className="p-3 text-purple-400 hidden md:table-cell">{song.album || "N/A"}</td>
+                  <td className="p-3 text-purple-400 hidden md:table-cell">{formatDuration(song.duration || 0)}</td>
                   <td className="p-3 text-right">
                     <div className="flex justify-end gap-2">
                       <button onClick={() => toggleLike(song.id)}
-                        className={`hover:text-white ${isLiked ? "text-pink-500" : "text-gray-400"}`}>
+                        className={`hover:text-white ${isLiked ? "text-pink-500" : "text-purple-400"}`}>
                         <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
                       </button>
                       <button
                         ref={(el) => (moreBtnRefs.current[song.id] = el)}
                         onClick={() => toggleOptions(song.id)}
-                        className="text-gray-400 hover:text-white"
+                        className="text-purple-400 hover:text-white"
                       >
                         <MoreHorizontal size={18} />
                       </button>
@@ -222,7 +221,7 @@ export default function PlaylistSongList({ songs: propSongs, playlistId }) {
       {optionsOpenId && selectedSong && (
         <div
           ref={popupRef}
-          className="fixed w-72 bg-zinc-800 text-white rounded-xl shadow-xl z-50 p-4 animate-fadeIn"
+          className="fixed w-72 bg-purple-900 text-white rounded-xl shadow-xl z-50 p-4 animate-fadeIn"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
           <div className="flex gap-3">
@@ -236,17 +235,17 @@ export default function PlaylistSongList({ songs: propSongs, playlistId }) {
             </div>
             <div className="flex-1">
               <div className="font-semibold text-base truncate">{selectedSong.title}</div>
-              <div className="text-sm text-gray-400">{selectedSong.artist}</div>
+              <div className="text-sm text-purple-300">{selectedSong.artist}</div>
             </div>
-            <button onClick={() => setOptionsOpenId(null)} className="text-gray-400 hover:text-white">
+            <button onClick={() => setOptionsOpenId(null)} className="text-purple-300 hover:text-white">
               <X size={16} />
             </button>
           </div>
 
-          <div className="mt-4 border-t border-zinc-700 pt-3">
+          <div className="mt-4 border-t border-purple-700 pt-3">
             <ul className="text-sm mt-2 space-y-2">
-              <li onClick={() => handleRemoveFromPlaylist(optionsOpenId)} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Remove from playlist</li>
-              <li onClick={handleCopyLink} className="hover:bg-zinc-700 rounded p-2 cursor-pointer">Copy Link</li>
+              <li onClick={() => handleRemoveFromPlaylist(optionsOpenId)} className="hover:bg-purple-800 rounded p-2 cursor-pointer">Remove from playlist</li>
+              <li onClick={handleCopyLink} className="hover:bg-purple-800 rounded p-2 cursor-pointer">Copy Link</li>
               <SongActionsMenu song={selectedSong} onClose={() => setOptionsOpenId(null)} />
             </ul>
           </div>
