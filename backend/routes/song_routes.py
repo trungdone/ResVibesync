@@ -21,7 +21,7 @@ def get_song_service():
 async def get_songs(
     genre: str = None,
     sort: str = None,
-    limit: int = 50,
+    limit: int = None,
     page: int = 1,
     service: SongService = Depends(get_song_service)
 ):
@@ -39,7 +39,7 @@ async def get_songs(
     except Exception as e:
         print(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
+    
 @router.get("/{id}", response_model=SongInDB)
 async def get_song(id: str, service: SongService = Depends(get_song_service)):
     song = service.get_song_by_id(id)

@@ -47,6 +47,20 @@ export async function fetchSongsByArtist(artistId) {
     });
 }
 
+export async function fetchSongsByArtistWithQuery(artistId) {
+  try {
+    const params = { artistId };
+    const songs = await fetchSongs(params);
+    console.log(`Songs for artist ${artistId}:`, songs);
+    // Sắp xếp ngẫu nhiên và lấy 4 bài hát
+    const shuffledSongs = songs.sort(() => 0.5 - Math.random()).slice();
+    return shuffledSongs;
+  } catch (error) {
+    console.error(`Error fetching songs for artist ${artistId}:`, error);
+    return [];
+  }
+}
+
 export async function fetchTopSongs(limit = 10) {
   const endpoint = "/api/songs";
   return await apiFetch(endpoint, { fallbackOnError: [] })
