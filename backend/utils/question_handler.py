@@ -6,6 +6,8 @@ from services.artist_service import ArtistService
 from services.song_service import SongService
 from database.repositories.artist_repository import ArtistRepository
 from database.repositories.song_repository import SongRepository
+from services.album_service import AlbumService
+
 
 # ======== Chuẩn hóa văn bản ==========
 def normalize_text(text: str) -> str:
@@ -19,11 +21,38 @@ def normalize_text(text: str) -> str:
 def detect_language(text: str) -> str:
     return "en" if re.search(r'[a-zA-Z]', text) and not re.search(r'[à-ỹÀ-Ỹ]', text) else "vi"
 
+
+def find_best_match(query: str, candidates: list[str]) -> str:
+    query_norm = normalize_text(query)
+    candidates_norm = [normalize_text(c) for c in candidates]
+    matches = difflib.get_close_matches(query_norm, candidates_norm, n=1, cutoff=0.6)
+    if matches:
+        matched_index = candidates_norm.index(matches[0])
+        return candidates[matched_index]  # trả về tên gốc ban đầu
+    return None
+
+def search_artist(query: str, all_artists: list[str]):
+    best_match = find_best_match(query, all_artists)
+    if best_match:
+        print(f"Tìm thấy nghệ sĩ gần đúng: {best_match}")
+        # Lúc này bạn có thể truy vấn DB bằng best_match
+        return best_match
+    else:
+        print("Không tìm thấy nghệ sĩ phù hợp.")
+        return None
+
+
 # ======== Khởi tạo service ==========
 artist_repo = ArtistRepository()
 song_repo = SongRepository()
 artist_service = ArtistService()
 song_service = SongService(song_repo, artist_repo)
+
+artist_service = ArtistService()
+
+def get_all_artists_simple():
+    return artist_service.get_all_artists_simple()
+
 
 # ======== Lấy dữ liệu từ MongoDB ==========
 try:
@@ -42,7 +71,7 @@ ARTIST_ENTRIES = [
         "name": artist["name"],
         "aliases": artist.get("aliases", []),
         "bio": artist.get("bio", ""),
-        "url": f"http://localhost:3000/artist/{artist['artist_id']}",
+        "url": f"http://localhost:3000/artist/{artist['_id']}",
         "keywords": [normalize_text(artist["name"])] + [normalize_text(alias) for alias in artist.get("aliases", [])],
     }
     for artist in ARTISTS_DATA
@@ -122,6 +151,8 @@ async def handle_user_question(prompt: str) -> str:
             "❗ Your question is unclear. Please specify whether you're looking for a *song*, *artist*, or *music genre* 🎵.\n"
             "Example: *'song Love Someone Like You'* or *'artist Taylor Swift'*."
         )
+    
+    
 
     # 3. Enrich prompt nếu quá ngắn
     enriched_prompt = prompt

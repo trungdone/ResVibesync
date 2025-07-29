@@ -7,6 +7,8 @@ from fastapi import HTTPException
 from models.album import AlbumCreate, AlbumUpdate, AlbumInDB
 from database.repositories.album_repository import AlbumRepository
 from database.repositories.song_repository import SongRepository
+from database.db import artists_collection, songs_collection, albums_collection
+from bson import ObjectId
 
 class AlbumService:
     def __init__(self):
@@ -45,3 +47,26 @@ class AlbumService:
             raise HTTPException(status_code=400, detail="ID album không hợp lệ")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Không thể lấy thông tin album: {str(e)}")
+        
+    def get_artist_albums_by_name(self, artist_name: str):
+        artist = artists_collection.find_one({"name": {"$regex": artist_name, "$options": "i"}})
+        if not artist:
+            return {"reply": f"Không tìm thấy nghệ sĩ có tên '{artist_name}'."}
+
+        albums = list(albums_collection.find({"artist_id": artist["_id"]}))
+        if not albums:
+            return {"reply": f"Nghệ sĩ '{artist['name']}' chưa có album nào."}
+
+        album_infos = [
+            {
+                "title": album["title"],
+                "cover": album.get("cover_url", ""),
+                "link": f"http://localhost:3000/album/{str(album['_id'])}"
+            }
+            for album in albums
+        ]
+
+        return {
+            "reply": f"Các album của nghệ sĩ {artist['name']}:",
+            "albums": album_infos
+        }

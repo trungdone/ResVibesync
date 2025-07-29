@@ -1,76 +1,86 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List
-from datetime import datetime
-from bson import ObjectId
-from models.song import SongInDB
-from database.db import songs_collection
+from fastapi import APIRouter, HTTPException
 from database.repositories.song_repository import SongRepository
+from bson import ObjectId
+from database.db import songs_collection
 
-router = APIRouter(
-    prefix="/api/top100",
-    tags=["Top 100 Charts"],
-    responses={404: {"description": "Not found"}}
-)
+router = APIRouter(prefix="/top100", tags=["Top 100 Songs"])
 
-@router.get("/{genre}", response_model=List[SongInDB])
-async def get_top100_by_genre(genre: str):
-    """
-    Lấy danh sách Top 100 bài hát theo thể loại
+SUPPORTED_GENRES = [
+    "love", "sad", "happy", "rap", "korean",
+    "edm", "pop", "rock", "instrumental", "lofi", "usuk", "vpop","kpop","edm"
+]
+
+GENRE_MAP = {
+    "love": "Love",
+    "sad": "Sad",
+    "happy": "Happy",
+    "rap": "Rap",
+    "korean": "Korean",
+    "edm": "EDM",
+    "pop": "Pop",
+    "rock": "Rock",
+    "instrumental": "Instrumental",
+    "lofi": "Lo-fi",
+    "usuk": "UK-US",
+    "vpop": "Vietnamese",
+    "kpop": "Korean",
+    "edm": "EDM"
+
+}
+
+
+def convert_song(song: dict) -> dict:
+    return {
+        "id": str(song["_id"]) if "_id" in song else None,
+        "title": song.get("title"),
+        "artist": song.get("artist"),
+        "cover_art": song.get("coverArt"),  # giữ đồng nhất camelCase
+        "audioUrl": song.get("audioUrl"),
+    }
+
+# ✅ Route chung cho tất cả genre
+@router.get("/{genre}")
+def get_top_songs_by_genre(genre: str):
+    genre = genre.lower()
+
+    if genre not in SUPPORTED_GENRES:
+        raise HTTPException(status_code=400, detail=f"Genre '{genre}' not supported.")
     
-    Parameters:
-    - genre: Thể loại nhạc (vpop, nhac-tre, us-uk, edm, bolero)
-    
-    Returns:
-    - Danh sách bài hát sắp xếp theo lượt nghe giảm dần
-    """
-    try:
-        # Validate genre
-        valid_genres = ["vpop", "nhac-tre", "us-uk", "edm", "bolero"]
-        if genre not in valid_genres:
-            raise HTTPException(status_code=400, detail="Thể loại không hợp lệ")
-        
-        # Query database
-        songs = SongRepository.find_all(
-            query={"genre": genre},
-            sort="playCount",
-            limit=100
-        )
-        
-        if not songs:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Không tìm thấy bài hát cho thể loại {genre}"
-            )
-            
-        # Format response
-        formatted_songs = []
-        for song in songs:
-            song["id"] = str(song["_id"])
-            formatted_songs.append(SongInDB(**song))
-            
-        return formatted_songs
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Lỗi server khi lấy danh sách bài hát: {str(e)}"
-        )
+    db_genre = GENRE_MAP[genre]
+    recs = list(songs_collection.find({ "genre": {"$in": [db_genre]} }).limit(100))
 
-@router.get("/featured/latest", response_model=List[SongInDB])
-async def get_latest_featured_songs(limit: int = 10):
-    """
-    Lấy danh sách bài hát nổi bật mới nhất
-    """
-    try:
-        songs = SongRepository.find_all(
-            sort="created_at",
-            limit=limit
-        )
-        return [SongInDB(**{**song, "id": str(song["_id"])}) for song in songs]
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Lỗi server: {str(e)}"
-        )
+    return {
+        "genre": genre,
+        "total": len(recs),
+        "songs": [convert_song(song) for song in recs]
+    }
+
+# ✅ Route riêng cho USUK
+@router.get("/usuk-only")
+async def get_top100_usuk_only():
+    recs = list(songs_collection.find({ "genre": "UK-US" }).limit(100))
+    return {
+        "genre": "usuk",
+        "total": len(recs),
+        "songs": [convert_song(song) for song in recs]
+    }
+
+# ✅ Route riêng cho Love (nếu cần)
+@router.get("/love-only")
+async def get_top100_love_only():
+    recs = list(songs_collection.find({ "genre": "Love" }).limit(100))
+    return {
+        "genre": "love",
+        "total": len(recs),
+        "songs": [convert_song(song) for song in recs]
+    }
+
+
+@router.get("/vpop-only")
+async def get_top100_love_only():
+    recs = list(songs_collection.find({ "genre": "Vietnamese" }).limit(100))
+    return {
+        "genre": "love",
+        "total": len(recs),
+        "songs": [convert_song(song) for song in recs]
+    }

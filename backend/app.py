@@ -61,7 +61,7 @@ app.include_router(artist_routes.router, prefix="/api")
 app.include_router(chat_routes.router)
 app.include_router(recomment_routes.router, prefix="/api")
 app.include_router(history_songs_routes.router)
-app.include_router(top100_routes.router)
+app.include_router(top100_routes.router, prefix="/api")  # === top100 ===
 app.include_router(notifications_routes.router)
 app.include_router(search_routes, prefix="/api")
 

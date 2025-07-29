@@ -25,7 +25,7 @@ export default function Top100() {
       {
         title: "Top 100 V-Pop",
         subtitle: "Hòa Minzy, Tăng Duy Tân...",
-        image: availableImages[0], // placeholder.jpg
+        image: availableImages[6], // placeholder.jpg
         href: "/charts/vpop"
       },
       {

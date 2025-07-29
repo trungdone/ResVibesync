@@ -19,6 +19,19 @@ class SongsResponse(BaseModel):
 
 def get_song_service():
     return SongService(SongRepository(), ArtistRepository())
+GENRE_MAP = {
+    "love": "Love",
+    "sad": "Sad",
+    "happy": "Happy",
+    "rap": "Rap",
+    "korean": "Korean",
+    "edm": "EDM",
+    "pop": "Pop",
+    "rock": "Rock",
+    "instrumental": "Instrumental",
+    "lofi": "Lo-fi",
+    "usuk": "UK-US",
+}
 
 # ✅ GET all songs (hỗ trợ filter, sort, pagination)
 @router.get("", response_model=SongsResponse)
@@ -49,6 +62,18 @@ async def get_songs(
         logger.error(f"💥 Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
+
+# ✅ NEW: Route lấy top 100 bài hát theo thể loại (ví dụ: love, pop, etc.)
+# 🔥 Thêm route này TRƯỚC route động /{id} để tránh xung đột
+@router.get("/top100/{genre}", response_model=List[SongInDB])
+async def get_top100_by_genre(genre: str, service: SongService = Depends(get_song_service)):
+    try:
+        songs = service.get_top100_by_genre(genre)
+        return songs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Không thể lấy top 100 bài hát: {str(e)}")
+
+
 # ✅ GET one song by ID
 @router.get("/{id}", response_model=SongInDB)
 async def get_song(id: str, service: SongService = Depends(get_song_service)):
@@ -56,6 +81,7 @@ async def get_song(id: str, service: SongService = Depends(get_song_service)):
     if not song:
         raise HTTPException(status_code=404, detail="Song not found")
     return song
+
 
 # ✅ CREATE song
 @router.post("", dependencies=[Depends(get_current_user)])
@@ -68,6 +94,7 @@ async def create_song(song_data: SongCreate, service: SongService = Depends(get_
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
+
 # ✅ UPDATE song
 @router.put("/{id}", dependencies=[Depends(get_current_user)])
 async def update_song(id: str, song_data: SongUpdate, service: SongService = Depends(get_song_service)):
@@ -78,12 +105,14 @@ async def update_song(id: str, song_data: SongUpdate, service: SongService = Dep
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 # ✅ DELETE song
 @router.delete("/{id}", dependencies=[Depends(get_current_user)])
 async def delete_song(id: str, service: SongService = Depends(get_song_service)):
     if not service.delete_song(id):
         raise HTTPException(status_code=404, detail="Song not found")
     return {"message": "Song deleted successfully"}
+
 
 # ✅ GET random song
 @router.get("/random", response_model=SongInDB)

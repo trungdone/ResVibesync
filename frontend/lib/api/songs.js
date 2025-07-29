@@ -70,24 +70,47 @@ export async function fetchSongsByKeyword(keyword) {
 
 
 
-export async function fetchSongsByGenre(genreName, limit = 500) {
-  try {
-    const params = new URLSearchParams({ genre: genreName, limit });
-    const endpoint = `/api/songs?${params.toString()}`;
-    console.log(`Fetching songs for genre: ${genreName}, limit: ${limit}`);
+// export async function fetchSongsByGenre(genreName, limit = 500) {
+//   try {
+//     const params = new URLSearchParams({ genre: genreName, limit });
+//     const endpoint = `/api/songs?${params.toString()}`;
+//     console.log(`Fetching songs for genre: ${genreName}, limit: ${limit}`);
     
-    const data = await apiFetch(endpoint, { fallbackOnError: { songs: [], total: 0 } });
+//     const data = await apiFetch(endpoint, { fallbackOnError: { songs: [], total: 0 } });
     
-    if (!data || !Array.isArray(data.songs)) {
-      console.error("Invalid response from API:", data);
-      return { songs: [], total: 0 };
-    }
+//     if (!data || !Array.isArray(data.songs)) {
+//       console.error("Invalid response from API:", data);
+//       return { songs: [], total: 0 };
+//     }
 
-    console.log(`✅ Received ${data.songs.length} songs for genre ${genreName}`);
-    return data;
+//     console.log(`✅ Received ${data.songs.length} songs for genre ${genreName}`);
+//     return data;
+//   } catch (error) {
+//     console.error(`❌ Error fetching songs by genre (${genreName}):`, error);
+//     return { songs: [], total: 0 };
+//   }
+// }
+
+
+
+// 📁 lib/api/songs.js
+export const fetchSongsByGenre = async (genre) => {
+  const url = `http://localhost:8000/api/top100/${genre.toLowerCase()}`; // ✅ Đúng route
+  console.log("🎯 Fetching genre:", url);
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error("❌ Failed to fetch songs by genre", res.status);
+      throw new Error("Failed to fetch songs by genre");
+    }
+    return await res.json();
   } catch (error) {
-    console.error(`❌ Error fetching songs by genre (${genreName}):`, error);
-    return { songs: [], total: 0 };
+    console.error("💥 Error fetching songs:", error);
+    throw error;
   }
-}
+};
+
+
+
 

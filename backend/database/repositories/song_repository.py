@@ -169,3 +169,31 @@ class SongRepository:
             logger.error(f"❌ Error in find_by_genre: {str(e)}")
             raise ValueError(f"Failed to query songs by genre: {str(e)}")
 
+    @staticmethod
+    def get_top_songs_by_genre_simple(genre: str, limit: int = 100) -> List[Dict]:
+        try:
+            query = {
+                "genre": {
+                    "$elemMatch": {
+                        "$regex": f"^{genre}$",
+                        "$options": "i"
+                    }
+                }
+            }
+
+            cursor = songs_collection.find(query).limit(limit)
+            songs = list(cursor)
+
+            # ✅ Convert ObjectId to string
+            for song in songs:
+                if "_id" in song:
+                    song["_id"] = str(song["_id"])
+
+            logger.info(f"✅ Found {len(songs)} songs for genre '{genre}'")
+            return songs
+
+        except Exception as e:
+            logger.error(f"❌ Error in get_top_songs_by_genre_simple: {str(e)}")
+            raise ValueError(f"Failed to get songs for genre '{genre}'")
+
+
