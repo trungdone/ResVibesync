@@ -6,7 +6,7 @@ from typing import List, Optional, Dict
 from datetime import datetime
 import random
 
-from services.genre_service import get_region_query
+from services.genre_service import get_region_query  # ⚠️ cần nếu dùng filter theo region
 
 
 class SongRepository:
@@ -84,9 +84,7 @@ class SongRepository:
 
     @staticmethod
     def delete(song_id: str) -> bool:
-        result = songs_collection.delete_one(
-            {"_id": SongRepository._validate_object_id(song_id)}
-        )
+        result = songs_collection.delete_one({"_id": SongRepository._validate_object_id(song_id)})
         return result.deleted_count > 0
 
     @staticmethod
@@ -137,6 +135,22 @@ class SongRepository:
             raise ValueError("Failed to find songs by IDs")
 
     @staticmethod
+    def find_by_genre(genre: str, page: int = 1, limit: int = 50) -> List[Dict]:
+        try:
+            genres = [g.strip() for g in genre.split(" and ")] if " and " in genre else [genre]
+            query = {"genre": {"$all": genres}} if genres else {}
+            print(f"[find_by_genre] Query: {query}")
+            cursor = songs_collection.find(query, SongRepository.PROJECTION).skip((page - 1) * limit).limit(limit)
+            songs = list(cursor)
+            print(f"[find_by_genre] Found {len(songs)} songs for genre '{genre}' (page={page}, limit={limit})")
+            return songs
+        except Exception as e:
+            print(f"[find_by_genre] Error: {str(e)}")
+            raise ValueError(f"Failed to query songs by genre: {str(e)}")
+
+    # ✅ ADDITIONAL METHODS FROM CODE 1
+
+    @staticmethod
     def get_random_songs(limit: int = 10) -> List[Dict]:
         try:
             pipeline = [
@@ -179,17 +193,3 @@ class SongRepository:
         except Exception as e:
             print(f"[find_by_region] Error: {e}")
             raise ValueError(f"Failed to find songs by region: {e}")
-
-    @staticmethod
-    def find_by_genre(genre: str, page: int = 1, limit: int = 50) -> List[Dict]:
-        try:
-            genres = [g.strip() for g in genre.split(" and ")] if " and " in genre else [genre]
-            query = {"genre": {"$all": genres}} if genres else {}
-            print(f"[find_by_genre] Query: {query}")
-            cursor = songs_collection.find(query, SongRepository.PROJECTION).skip((page - 1) * limit).limit(limit)
-            songs = list(cursor)
-            print(f"[find_by_genre] Found {len(songs)} songs for genre '{genre}' (page={page}, limit={limit})")
-            return songs
-        except Exception as e:
-            print(f"[find_by_genre] Error: {str(e)}")
-            raise ValueError(f"Failed to query songs by genre: {str(e)}")

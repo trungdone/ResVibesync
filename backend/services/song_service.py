@@ -15,25 +15,20 @@ class SongService:
         self.song_repository = song_repository
         self.artist_repository = artist_repository
 
-    def _map_to_song_in_db(self, song: dict) -> SongInDB:
-        artist_id = song.get("artistId")
-        artist_name = ""
-        if artist_id:
-            artist = self.artist_repository.find_by_id(ObjectId(artist_id))
-            artist_name = artist.get("name") if artist else ""
-
+    @staticmethod
+    def _map_to_song_in_db(song: dict) -> SongInDB:
         return SongInDB(
             id=str(song.get("_id", "")),
             title=song.get("title", ""),
-            artist=artist_name,
+            artist=song.get("artist", ""),
             album=song.get("album", ""),
             releaseYear=song.get("releaseYear", 0),
             duration=song.get("duration", 0),
             genre=song.get("genre", []),
-            coverArt=song.get("coverArt"),
-            audioUrl=song.get("audioUrl"),
-            lyrics_lrc=song.get("lyrics_lrc"),
-            artistId=str(artist_id) if artist_id else "",
+            coverArt=song.get("coverArt", ""),
+            audioUrl=song.get("audioUrl", ""),
+            lyrics_lrc=song.get("lyrics_lrc", None),
+            artistId=str(song.get("artistId", "")),
             created_at=song.get("created_at", datetime.utcnow()),
             updated_at=song.get("updated_at", None)
         )
@@ -58,15 +53,18 @@ class SongService:
 
     def get_song_by_id(self, song_id: str) -> Optional[SongInDB]:
         song = self.song_repository.find_by_id(song_id)
-        return self._map_to_song_in_db(song) if song else None
+        if not song:
+            return None
+        return self._map_to_song_in_db(song)
 
     def create_song(self, song_data: SongCreate) -> str:
+        # Kiểm tra artistId tồn tại
         if not self.artist_repository.find_by_id(ObjectId(song_data.artistId)):
             raise ValueError(f"Artist with ID {song_data.artistId} does not exist")
 
+        # Kiểm tra URL media
         if song_data.audioUrl and not self._is_url_accessible(song_data.audioUrl):
             raise ValueError("Invalid or inaccessible audio URL")
-
         if song_data.coverArt and not self._is_url_accessible(song_data.coverArt):
             raise ValueError("Invalid or inaccessible cover art URL")
 
@@ -85,17 +83,26 @@ class SongService:
                 raise ValueError(f"Artist with ID {update_data['artistId']} does not exist")
             update_data["artistId"] = str(update_data["artistId"])
 
-        if update_data.get("audioUrl") and not self._is_url_accessible(update_data["audioUrl"]):
-            raise ValueError("Invalid or inaccessible audio URL")
-
-        if update_data.get("coverArt") and not self._is_url_accessible(update_data["coverArt"]):
-            raise ValueError("Invalid or inaccessible cover art URL")
+        if "audioUrl" in update_data and update_data["audioUrl"]:
+            if not self._is_url_accessible(update_data["audioUrl"]):
+                raise ValueError("Invalid or inaccessible audio URL")
+        if "coverArt" in update_data and update_data["coverArt"]:
+            if not self._is_url_accessible(update_data["coverArt"]):
+                raise ValueError("Invalid or inaccessible cover art URL")
 
         update_data["updated_at"] = datetime.utcnow()
         return self.song_repository.update(song_id, update_data)
 
     def delete_song(self, song_id: str) -> bool:
         return self.song_repository.delete(song_id)
+
+    def get_songs_by_genre(self, genre: str, page: int = 1, limit: int = 50) -> List[SongInDB]:
+        if not genre:
+            raise ValueError("Genre is required")
+        songs = self.song_repository.find_by_genre(genre, page, limit)
+        return [self._map_to_song_in_db(song) for song in songs]
+
+    # ✅ Thêm từ code 1
 
     def get_random_songs(self, limit: int = 10, region: Optional[str] = None) -> List[SongInDB]:
         raw_songs = self.song_repository.get_random_songs(limit=limit * 3)
@@ -117,9 +124,3 @@ class SongService:
     def get_random_songs_by_region(self, region: Optional[str], limit: int = 12) -> List[SongInDB]:
         raw_songs = self.song_repository.get_random_songs_by_region(region=region, limit=limit)
         return [self._map_to_song_in_db(song) for song in raw_songs]
-
-    def get_songs_by_genre(self, genre: str, page: int = 1, limit: int = 50) -> List[SongInDB]:
-        if not genre:
-            raise ValueError("Genre is required")
-        songs = self.song_repository.find_by_genre(genre, page, limit)
-        return [self._map_to_song_in_db(song) for song in songs]

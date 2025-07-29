@@ -1,19 +1,57 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Play, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import Top100 from "./Top100";
 import { apiFetch } from "@/lib/utils";
 import { useMusic } from "@/context/music-context";
 
-export default function GenresPage() {
-  const [songs, setSongs] = useState([]);
+const newReleases = [
+  {
+    title: "Trao Về Anh",
+    artist: "Juky San",
+    time: "2 hours ago",
+    region: "vietnamese",
+    image: "/jukysan.jpg",
+  },
+  {
+    title: "Chinatown",
+    artist: "Jaigon Orchestra",
+    time: "Today",
+    region: "international",
+    image: "/chinatown.jpg",
+    premium: true,
+  },
+  {
+    title: "I'LL BE THERE",
+    artist: "EM XINH, Orange",
+    time: "Yesterday",
+    region: "vietnamese",
+    image: "/illbethere.jpg",
+  },
+  {
+    title: "Cruel Summer",
+    artist: "Taylor Swift",
+    time: "2 days ago",
+    region: "international",
+    image: "/taylor.jpg",
+  },
+  {
+    title: "Kill This Love",
+    artist: "BLACKPINK",
+    time: "3 days ago",
+    region: "international",
+    image: "/blackpink.jpg",
+  },
+];
+
+export default function DiscoveryPage() {
   const [region, setRegion] = useState("all");
+  const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const { playSong } = useMusic();
-  const router = useRouter();
 
   const fetchSongs = async (refresh = false) => {
     setIsLoading(true);
@@ -36,17 +74,26 @@ export default function GenresPage() {
     fetchSongs(true);
   }, [region]);
 
-  const handleRegionChange = (newRegion) => {
-    setRegion(newRegion);
+  const handleRegionChange = (type) => {
+    setRegion(type);
   };
 
   const handleReset = () => {
     fetchSongs(true);
   };
 
+  const filteredReleases = newReleases.filter((song) => {
+    if (region === "all") return true;
+    return song.region === region;
+  });
+
   return (
-    <div className="p-6 min-h-screen bg-black text-white">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6 min-h-screen bg-black text-white space-y-10">
+      {/* ✅ TOP 100 */}
+      <Top100 />
+
+      {/* REGION FILTER + REFRESH */}
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Discover Songs by Region</h1>
         <button
           onClick={handleReset}
@@ -57,7 +104,7 @@ export default function GenresPage() {
         </button>
       </div>
 
-      <div className="flex gap-4 mb-6">
+      <div className="flex gap-3 mb-6">
         {["all", "vietnamese", "international"].map((type) => (
           <button
             key={type}
@@ -77,13 +124,14 @@ export default function GenresPage() {
         ))}
       </div>
 
+      {/* ✅ DYNAMIC SONGS FROM API */}
       {songs.length === 0 ? (
-        <p>No songs found.</p>
+        <p className="text-gray-400">No songs found.</p>
       ) : (
         <div className="relative">
           {isLoading && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-xl">
-              <p className="text-white text-sm animate-pulse">Loading new songs...</p>
+              <p className="text-white text-sm animate-pulse">Loading songs...</p>
             </div>
           )}
           <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 transition-opacity duration-300 ${isLoading ? "opacity-50" : "opacity-100"}`}>
@@ -104,6 +152,11 @@ export default function GenresPage() {
                         priority
                       />
                     </Link>
+                    {song.premium && (
+                      <span className="absolute top-2 right-2 text-xs text-yellow-300 border border-yellow-300 rounded px-2 py-0.5 bg-black/60">
+                        PREMIUM
+                      </span>
+                    )}
                   </div>
 
                   <div className="mt-3 space-y-1">
@@ -113,7 +166,6 @@ export default function GenresPage() {
                     >
                       {song.title || "Untitled"}
                     </Link>
-
                     {song.artist && song.artistId ? (
                       <Link
                         href={`/artist/${song.artistId}`}
@@ -140,7 +192,37 @@ export default function GenresPage() {
           </div>
         </div>
       )}
+
+      {/* ✅ STATIC NEW RELEASES
+      <section className="mt-10">
+        <h2 className="text-2xl font-bold mb-3">New Releases</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredReleases.map((song, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-4 bg-white/5 hover:bg-white/10 p-3 rounded-lg"
+            >
+              <Image
+                src={song.image}
+                alt={song.title}
+                width={60}
+                height={60}
+                className="w-16 h-16 object-cover rounded"
+              />
+              <div className="flex-1">
+                <h4 className="font-semibold">{song.title}</h4>
+                <p className="text-sm text-gray-400">{song.artist}</p>
+                <p className="text-xs text-gray-500">{song.time}</p>
+              </div>
+              {song.premium && (
+                <span className="text-xs text-yellow-300 border border-yellow-300 rounded px-2 py-0.5">
+                  PREMIUM
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </section> */}
     </div>
   );
 }
-

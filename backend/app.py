@@ -32,7 +32,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000", 
-        "http://localhost:3002"  # Thêm dòng này
+        "http://localhost:3001"  # Thêm dòng này
     ],
     allow_credentials=True,
     allow_methods=["*"],
