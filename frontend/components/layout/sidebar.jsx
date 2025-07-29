@@ -139,13 +139,13 @@ export default function Sidebar() {
 
           <div className="space-y-1">
             <Link
-              href="/playlist/liked"
+              href="/liked"
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-white/5 text-gray-400 hover:text-white"
             >
               <div className="w-6 h-6 flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-400 rounded-sm">
                 <Heart size={12} className="text-white" />
               </div>
-              <span>Liked Songs</span>
+              <span>Liked</span>
             </Link>
 
             {playlists.map((playlist) => (

@@ -6,7 +6,9 @@ import axios from "axios"
 import { Settings, UserPlus } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/<your_cloud_name>/"
-import Footer from "@/components/layout/Footer"
+
+import Footer from "@/components/layout/footer"
+
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null)

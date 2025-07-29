@@ -35,6 +35,11 @@ from routes.master_artist_routes.artist_album_routes import router as artist_alb
 # Search
 from routes.search_routes import router as search_routes
 
+import os
+from routes.likes import router as likes_router  # <-- Add this import
+
+
+
 # === Initialize FastAPI ===
 app = FastAPI(title="VibeSync API")
 
@@ -63,7 +68,11 @@ app.include_router(recomment_routes.router, prefix="/api")
 app.include_router(history_songs_routes.router)
 app.include_router(top100_routes.router, prefix="/api")  # === top100 ===
 app.include_router(notifications_routes.router)
+
 app.include_router(search_routes, prefix="/api")
+
+app.include_router(likes_router, prefix="/api")  # <-- Replace the invalid line with this
+
 
 # Admin APIs
 app.include_router(admin_song_router, prefix="/api")

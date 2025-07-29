@@ -87,6 +87,7 @@ class SongService:
         return self.song_repository.delete(song_id)
     
 
+
     # services/song_service.py
     def get_all_songs_simple(self) -> List[Dict]:
         try:

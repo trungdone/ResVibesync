@@ -52,14 +52,14 @@ export async function getAllPlaylists(creatorId) {
   return res.json();
 }
 
-// ✅ Lấy playlist công khai
-export async function getAllPublicPlaylists() {
-  const res = await fetch(`${API_BASE}/playlists?isPublic=true`, {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error("Failed to fetch public playlists");
-  return res.json();
-}
+// // ✅ Lấy playlist công khai
+// export async function getAllPublicPlaylists() {
+//   const res = await fetch(`${API_BASE}/playlists?isPublic=true`, {
+//     cache: "no-store",
+//   });
+//   if (!res.ok) throw new Error("Failed to fetch public playlists");
+//   return res.json();
+// }
 
 // ✅ Lấy 1 playlist theo ID
 export async function getPlaylistById(id) {
@@ -112,3 +112,28 @@ export async function deletePlaylist(playlistId) {
   if (!res.ok) throw new Error("Failed to delete playlist");
   return res.json();
 }
+
+
+// lib/api/playlists.js
+
+export async function getAllPublicPlaylists() {
+  const res = await fetch(`${API_BASE}/playlists?isPublic=true`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch public playlists");
+  return res.json();
+}
+
+// ✅ Cập nhật playlist
+export async function updatePlaylist(playlistId, payload) {
+  const res = await fetch(`${API_BASE}/playlists/${playlistId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to update playlist");
+  return data;
+}
+

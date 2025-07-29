@@ -8,4 +8,6 @@ export function triggerPlaylistRefresh() {
   if (typeof refreshFn === "function") {
     refreshFn();
   }
+
 }
+

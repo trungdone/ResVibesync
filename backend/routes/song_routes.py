@@ -38,7 +38,7 @@ GENRE_MAP = {
 async def get_songs(
     genre: str = None,
     sort: str = None,
-    limit: int = 50,
+    limit: int = None,
     page: int = 1,
     service: SongService = Depends(get_song_service)
 ):
@@ -63,6 +63,7 @@ async def get_songs(
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
+
 # ✅ NEW: Route lấy top 100 bài hát theo thể loại (ví dụ: love, pop, etc.)
 # 🔥 Thêm route này TRƯỚC route động /{id} để tránh xung đột
 @router.get("/top100/{genre}", response_model=List[SongInDB])
@@ -75,6 +76,9 @@ async def get_top100_by_genre(genre: str, service: SongService = Depends(get_son
 
 
 # ✅ GET one song by ID
+
+    
+
 @router.get("/{id}", response_model=SongInDB)
 async def get_song(id: str, service: SongService = Depends(get_song_service)):
     song = service.get_song_by_id(id)
