@@ -15,12 +15,24 @@ class SongService:
         self.song_repository = song_repository
         self.artist_repository = artist_repository
 
-    @staticmethod
-    def _map_to_song_in_db(song: dict) -> SongInDB:
+    def _map_to_song_in_db(self, song: dict) -> SongInDB:
+        # Lấy tên nghệ sĩ từ artistId
+        artist_name = ""
+        artist_id = song.get("artistId")
+        if artist_id:
+            try:
+                obj_id = ObjectId(artist_id)
+                artist = self.artist_repository.find_by_id(obj_id)
+                if artist:
+                    artist_name = artist.get("name", "")
+            except Exception:
+                # Nếu artistId không hợp lệ, bỏ qua
+                artist_name = ""
+
         return SongInDB(
             id=str(song.get("_id", "")),
             title=song.get("title", ""),
-            artist=song.get("artist", ""),
+            artist=artist_name,
             album=song.get("album", ""),
             releaseYear=song.get("releaseYear", 0),
             duration=song.get("duration", 0),
@@ -28,7 +40,7 @@ class SongService:
             coverArt=song.get("coverArt", ""),
             audioUrl=song.get("audioUrl", ""),
             lyrics_lrc=song.get("lyrics_lrc", None),
-            artistId=str(song.get("artistId", "")),
+            artistId=str(artist_id) if artist_id else "",
             created_at=song.get("created_at", datetime.utcnow()),
             updated_at=song.get("updated_at", None)
         )
@@ -101,8 +113,6 @@ class SongService:
             raise ValueError("Genre is required")
         songs = self.song_repository.find_by_genre(genre, page, limit)
         return [self._map_to_song_in_db(song) for song in songs]
-
-    # ✅ Thêm từ code 1
 
     def get_random_songs(self, limit: int = 10, region: Optional[str] = None) -> List[SongInDB]:
         raw_songs = self.song_repository.get_random_songs(limit=limit * 3)
