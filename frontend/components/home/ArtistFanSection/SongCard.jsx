@@ -20,12 +20,16 @@ const SongCard = memo(({ song, index, artistName, onPlay, isPlaying }) => (
         alt={song.title || "Bài hát không xác định"}
         width={180}
         height={160}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover cursor-pointer"
         loading="lazy"
+        onClick={(e) => {
+          e.stopPropagation(); // Ngăn nút play bị kích hoạt
+          if (song.id) window.location.href = `/song/${song.id}`;
+        }}
         onError={(e) => {
           e.target.src = "https://via.placeholder.com/180";
         }}
-      /> {/* Ảnh bìa bài hát, dùng ảnh mặc định nếu không có */}
+      /> {/* Ảnh bìa bài hát, dùng ảnh mặc định nếu không có, điều hướng khi click */}
       <motion.div
         className="absolute bottom-2 right-2 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center cursor-pointer"
         onClick={() => onPlay(song)}
@@ -37,7 +41,10 @@ const SongCard = memo(({ song, index, artistName, onPlay, isPlaying }) => (
     <div className="p-2 text-white text-center">
       {song.id ? (
         <Link href={`/song/${song.id}`}>
-          <span className="text-white hover:underline font-semibold truncate">
+          <span
+            className="text-white hover:underline font-semibold truncate cursor-pointer"
+            onClick={(e) => e.stopPropagation()} // Ngăn nút play bị ảnh hưởng (nếu cần)
+          >
             {song.title || "Bài hát không xác định"}
           </span>
         </Link> // Liên kết đến trang chi tiết bài hát
