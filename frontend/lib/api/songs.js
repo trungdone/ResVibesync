@@ -47,14 +47,15 @@ export async function fetchSongsByArtist(artistId) {
     });
 }
 
+
 export async function fetchSongsByArtistWithQuery(artistId) {
   try {
-    const params = { artistId };
+    const params = { artistId}; // Thêm giới hạn 10 bài
     const songs = await fetchSongs(params);
-    console.log(`Songs for artist ${artistId}:`, songs);
-    // Sắp xếp ngẫu nhiên và lấy 4 bài hát
-    const shuffledSongs = songs.sort(() => 0.5 - Math.random()).slice();
-    return shuffledSongs;
+    if (process.env.NODE_ENV === "development") {
+      console.log(`Received ${songs.length} songs for artist ${artistId}`);
+    }
+    return songs; // Không cần sort hay slice vì server đã lọc và giới hạn
   } catch (error) {
     console.error(`Error fetching songs for artist ${artistId}:`, error);
     return [];

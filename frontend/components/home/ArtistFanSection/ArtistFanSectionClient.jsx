@@ -1,21 +1,19 @@
-"use client"; // Đánh dấu component client-side
 
-import { useState, useEffect, useCallback, Suspense } from "react"; // Nhập React hooks
-import { motion, AnimatePresence } from "framer-motion"; // Nhập motion cho animation
-import ArtistHeader from "./ArtistHeader"; // Nhập component ArtistHeader
-import SongList from "./SongList"; // Nhập component SongList
-import { useMusic } from "@/context/music-context"; // Nhập context quản lý nhạc
-import PropTypes from "prop-types"; // Nhập PropTypes để kiểm tra kiểu props
-import { fetchSongsByArtistWithQuery } from "@/lib/api/songs"; // Nhập API lấy bài hát theo nghệ sĩ
+"use client";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import ArtistHeader from "./ArtistHeader";
+import SongList from "./SongList";
+import { useMusic } from "@/context/music-context";
+import PropTypes from "prop-types";
+import { fetchSongsByArtistWithQuery } from "@/lib/api/songs";
 
 const formatDuration = (seconds) => {
-  // Định dạng thời gian sang phút:giây
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${minutes}:${secs.toString().padStart(2, "0")}`;
 };
 
-// Animation variants
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
@@ -23,17 +21,16 @@ const itemVariants = {
 };
 
 export default function ArtistFanSectionClient({ initialArtists, initialArtistIndex, initialSongs }) {
-  const [artists, setArtists] = useState(initialArtists || []); // State danh sách nghệ sĩ
-  const [currentArtistIndex, setCurrentArtistIndex] = useState(initialArtistIndex || -1); // State chỉ số nghệ sĩ
-  const [topSongs, setTopSongs] = useState(initialSongs || []); // State danh sách bài hát
-  const [songPageIndex, setSongPageIndex] = useState(0); // State trang bài hát
-  const [timeLeft, setTimeLeft] = useState(60); // State đếm ngược
-  const [isLoading, setIsLoading] = useState(false); // State trạng thái tải
+  const [artists, setArtists] = useState(initialArtists || []);
+  const [currentArtistIndex, setCurrentArtistIndex] = useState(initialArtistIndex || -1);
+  const [topSongs, setTopSongs] = useState(initialSongs || []);
+  const [songPageIndex, setSongPageIndex] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(300);
+  const [isLoading, setIsLoading] = useState(false);
   const songsPerPage = 5;
   const { setSongs, setContext, setContextId, playSong, togglePlayPause, isPlaying, currentSong } = useMusic();
 
   useEffect(() => {
-    // Cập nhật nghệ sĩ và bài hát mỗi 60 giây
     let timer;
     if (artists.length > 0 && currentArtistIndex >= 0) {
       timer = setInterval(async () => {
@@ -43,37 +40,23 @@ export default function ArtistFanSectionClient({ initialArtists, initialArtistIn
             do {
               newIndex = Math.floor(Math.random() * artists.length);
             } while (newIndex === currentArtistIndex && artists.length > 1);
-            setIsLoading(true); // Bắt đầu loading
+            setIsLoading(true);
             setCurrentArtistIndex(newIndex);
             setSongPageIndex(0);
 
-            // Hàm async để fetch songs
             const fetchNewSongs = async () => {
               const currentArtist = artists[newIndex];
-              console.log("Fetching songs for artist:", { id: currentArtist.id, name: currentArtist.name });
-              const songsData = await fetchSongsByArtistWithQuery(currentArtist.id, { cache: 'force-cache' }); // Lấy bài hát
-              console.log("Raw songs from API:", JSON.stringify(songsData, null, 2));
-
+              const songsData = await fetchSongsByArtistWithQuery(currentArtist.id, {
+                cache: "force-cache",
+                fields: "_id,title,artist,coverArt,duration,artistId",
+              });
               const mappedSongs = songsData
-                .slice(0, 500)
+                .slice(0, 200)
                 .filter((song) => {
                   const hasValidId = song._id || song.id;
                   const matchesArtistById = String(song.artistId) === String(currentArtist.id);
                   const matchesArtistByName = song.artist === currentArtist.name;
-                  const matchesArtist = hasValidId && (matchesArtistById || matchesArtistByName);
-                  if (!matchesArtist) {
-                    console.warn(
-                      `Song does not match artist:`,
-                      JSON.stringify(song, null, 2),
-                      `Current artist ID: ${currentArtist.id} (type: ${typeof currentArtist.id})`,
-                      `Song artistId: ${song.artistId} (type: ${typeof song.artistId})`,
-                      `Current artist name: ${currentArtist.name}`,
-                      `Song artist: ${song.artist}`,
-                      `Matches by ID: ${matchesArtistById}`,
-                      `Matches by name: ${matchesArtistByName}`
-                    );
-                  }
-                  return matchesArtist;
+                  return hasValidId && (matchesArtistById || matchesArtistByName);
                 })
                 .map((song) => ({
                   id: song._id || song.id || crypto.randomUUID(),
@@ -85,43 +68,34 @@ export default function ArtistFanSectionClient({ initialArtists, initialArtistIn
                   artist_id: song.artistId || currentArtist.id,
                   artist: song.artist || currentArtist.name,
                 }));
-              console.log("Mapped songs:", JSON.stringify(mappedSongs, null, 2));
               setTopSongs(mappedSongs);
-              setIsLoading(false); // Kết thúc loading
+              setIsLoading(false);
             };
             fetchNewSongs();
-
-            return 60; // Reset timer
+            return 300;
           }
           return prev - 1;
         });
       }, 1000);
     }
-
     return () => clearInterval(timer);
   }, [artists, currentArtistIndex]);
 
-  const handlePlay = useCallback(
-    // Xử lý phát/tạm dừng bài hát
-    (song) => {
-      console.log("Handle play, song ID:", song.id, "isPlaying:", isPlaying, "currentSong:", currentSong?.id);
-      if (currentSong && currentSong.id === song.id && isPlaying) {
-        togglePlayPause();
-      } else {
-        setSongs(topSongs);
-        setContext("artist");
-        setContextId(song.artist_id);
-        playSong({
-          ...song,
-          image: song.image || "https://via.placeholder.com/180",
-        });
-      }
-    },
-    [topSongs, setSongs, setContext, setContextId, playSong, togglePlayPause, isPlaying, currentSong]
-  );
+  const handlePlay = useCallback((song) => {
+    if (currentSong && currentSong.id === song.id && isPlaying) {
+      togglePlayPause();
+    } else {
+      setSongs(topSongs);
+      setContext("artist");
+      setContextId(song.artist_id);
+      playSong({
+        ...song,
+        image: song.image || "https://via.placeholder.com/180",
+      });
+    }
+  }, [topSongs, setSongs, setContext, setContextId, playSong, togglePlayPause, isPlaying, currentSong]);
 
   const handlePlayAll = useCallback(() => {
-    // Phát tất cả bài hát từ bài đầu
     if (topSongs.length > 0) {
       const firstSong = {
         ...topSongs[0],
@@ -134,13 +108,13 @@ export default function ArtistFanSectionClient({ initialArtists, initialArtistIn
     }
   }, [topSongs, setSongs, setContext, setContextId, playSong]);
 
-  const handlePrevPage = () => {
+  const handlePrevPage = useCallback(() => {
     setSongPageIndex((prev) => Math.max(prev - 1, 0));
-  };
+  }, []);
 
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     setSongPageIndex((prev) => Math.min(prev + 1, Math.ceil(topSongs.length / songsPerPage) - 1));
-  };
+  }, []);
 
   const currentArtist = artists[currentArtistIndex] || {};
 
@@ -165,7 +139,7 @@ export default function ArtistFanSectionClient({ initialArtists, initialArtistIn
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={{ duration: 0.5, ease: "easeInOut" }} // Tăng thời gian và thêm ease
+            transition={{ duration: 0.5, ease: "easeInOut" }}
           >
             <ArtistHeader
               artist={currentArtist}
@@ -179,18 +153,19 @@ export default function ArtistFanSectionClient({ initialArtists, initialArtistIn
                 setCurrentArtistIndex(newIndex);
                 setSongPageIndex(0);
 
-                // Fetch songs ngay khi nhấn Next Artist
                 const fetchNewSongs = async () => {
                   const currentArtist = artists[newIndex];
-                  const songsData = await fetchSongsByArtistWithQuery(currentArtist.id, { cache: 'force-cache' });
+                  const songsData = await fetchSongsByArtistWithQuery(currentArtist.id, {
+                    cache: "force-cache",
+                    fields: "_id,title,artist,coverArt,duration,artistId",
+                  });
                   const mappedSongs = songsData
-                    .slice(0, 500)
+                    .slice(0, 200)
                     .filter((song) => {
                       const hasValidId = song._id || song.id;
                       const matchesArtistById = String(song.artistId) === String(currentArtist.id);
                       const matchesArtistByName = song.artist === currentArtist.name;
-                      const matchesArtist = hasValidId && (matchesArtistById || matchesArtistByName);
-                      return matchesArtist;
+                      return hasValidId && (matchesArtistById || matchesArtistByName);
                     })
                     .map((song) => ({
                       id: song._id || song.id || crypto.randomUUID(),
@@ -207,7 +182,7 @@ export default function ArtistFanSectionClient({ initialArtists, initialArtistIn
                 };
                 fetchNewSongs();
               }}
-            /> 
+            />
             <SongList
               songs={topSongs}
               songPageIndex={songPageIndex}
@@ -218,7 +193,7 @@ export default function ArtistFanSectionClient({ initialArtists, initialArtistIn
               currentSong={currentSong}
               onPrevPage={handlePrevPage}
               onNextPage={handleNextPage}
-            /> 
+            />
           </motion.div>
         )}
       </AnimatePresence>
