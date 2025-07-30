@@ -29,7 +29,6 @@ class UserRepository:
         except (InvalidId, TypeError):
             return None
         return None
-    
 
     @staticmethod
     def find_all() -> List[Dict]:
@@ -74,6 +73,13 @@ class UserRepository:
 
     @staticmethod
     def delete(user_id: str) -> bool:
+
+        try:
+            obj_id = ObjectId(user_id)
+        except (InvalidId, TypeError):
+            return False
+        result = users_collection.delete_one({"_id": obj_id})
+
     # Try delete by string-based id first
         result = users_collection.delete_one({"_id": user_id})
         if result.deleted_count > 0:
@@ -86,4 +92,5 @@ class UserRepository:
            return result.deleted_count > 0
         except (InvalidId, TypeError):
            return False
+
 

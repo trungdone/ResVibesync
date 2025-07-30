@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from models.history import ListenHistoryModel
-from database.db import history_collection, songs_collection
+from database.db import song_history_collection, songs_collection
 from bson import ObjectId
 from datetime import datetime
 
@@ -15,12 +15,12 @@ async def save_listen_history(record: ListenHistoryModel):
         }
 
         # 🔍 Kiểm tra nếu đã tồn tại bản ghi giống nhau thì không lưu lại
-        existing = history_collection.find_one(doc)
+        existing = song_history_collection.find_one(doc)
         if existing:
             return {"message": "🎧 Đã tồn tại trong lịch sử nghe"}
 
         doc["timestamp"] = datetime.utcnow()
-        result = history_collection.insert_one(doc)
+        result = song_history_collection.insert_one(doc)
 
         return {
             "message": "🎧 Đã lưu lịch sử nghe",
@@ -37,7 +37,7 @@ async def get_user_history(user_id: str):
         user_obj_id = ObjectId(user_id)
 
         # Lấy tất cả lịch sử sắp xếp theo thời gian mới nhất trước
-        cursor = history_collection.find({"user_id": user_obj_id}).sort("timestamp", -1)
+        cursor = song_history_collection.find({"user_id": user_obj_id}).sort("timestamp", -1)
 
         unique_songs = {}
         for record in cursor:
@@ -48,7 +48,7 @@ async def get_user_history(user_id: str):
             if song_id_str not in unique_songs:
                 song = songs_collection.find_one({"_id": record["song_id"]})
                 unique_songs[song_id_str] = {
-                    "_id": str(record["_id"]),  # thêm key _id để frontend dùng
+                    "_id": str(record["_id"]),
                     "song_id": song_id_str,
                     "user_id": str(record["user_id"]),
                     "timestamp": record["timestamp"].isoformat(),
@@ -64,3 +64,5 @@ async def get_user_history(user_id: str):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi lấy lịch sử: {e}")
+
+

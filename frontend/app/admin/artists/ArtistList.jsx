@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+import { useState } from 'react';
+=======
 import { useState,useEffect } from 'react';
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,6 +11,25 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+<<<<<<< HEAD
+
+=======
+<<<<<<< HEAD
+import { createArtist, updateArtist, deleteArtist, fetchArtists } from "./artistsApi";
+>>>>>>> main
+
+export function ArtistList({ artists, onAdd, onEdit, onDelete, onView }) {
+  const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const filteredArtists = artists.filter(artist =>
+    artist.name.toLowerCase().includes(search.toLowerCase()) ||
+    artist.genres.some(genre => genre.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const totalPages = Math.ceil(filteredArtists.length / itemsPerPage);
+=======
 
 
 export function ArtistList({ artists, onAdd, onEdit, onDelete, onView }) {
@@ -30,6 +53,7 @@ export function ArtistList({ artists, onAdd, onEdit, onDelete, onView }) {
     }
   }, [filteredArtists, totalPages, currentPage]);
 
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedArtists = filteredArtists.slice(startIndex, startIndex + itemsPerPage);
 

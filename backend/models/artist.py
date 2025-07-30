@@ -10,6 +10,7 @@ class ArtistBase(BaseModel):
     followers: int = 0
     phone: Optional[str] = None
 
+
 class ArtistCreate(ArtistBase):
     image: Optional[str] = None
 
@@ -44,9 +45,16 @@ class ArtistInDB(ArtistBase):
     follower_ids: Optional[List[str]] = []
     created_at: datetime
     updated_at: Optional[datetime] = None
+    isFollowing: Optional[bool] = False  # ✅ THÊM DÒNG NÀY
+
+    followers: int = 0
+    follower_ids: Optional[List[str]] = []
+    created_at: datetime
+    updated_at: Optional[datetime] = None
     created_by_admin: bool = False
     claimed_by_user_id: Optional[str] = None
     isFollowing: Optional[bool] = False
+
 
     class Config:
         arbitrary_types_allowed = True

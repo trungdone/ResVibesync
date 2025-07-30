@@ -30,7 +30,12 @@ export default function ArtistDetailPage() {
   const [topSongs, setTopSongs] = useState([]);
   const [suggestedArtists, setSuggestedArtists] = useState([]);
   const [showMenu, setShowMenu] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [navigationLevel, setNavigationLevel] = useState(1);
+  const [showAllSongs, setShowAllSongs] = useState(false);
+  const [showAllTopSongs, setShowAllTopSongs] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [isFollowing, setIsFollowing] = useState(false);
 
   const {
@@ -44,36 +49,38 @@ export default function ArtistDetailPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!artistId || !token) return;
+    if (!artistId || !token) {
+      console.warn("⏳ Chưa sẵn sàng để fetch: artistId hoặc token chưa có");
+      return;
+    }
 
     const loadData = async () => {
       try {
         setLoading(true);
 
-        const [artistData, songs, albums] = await Promise.all([
-          fetchArtistById(artistId, token),
-          fetchSongsByArtist(artistId),
-          fetchAlbumsByArtist(artistId),
-        ]);
+        const artistData = await fetchArtistById(artistId, token);
+        if (!artistData) throw new Error("Artist not found");
+
+        const suggested = await fetchSuggestedArtists(artistId);
+        const songs = await fetchSongsByArtist(artistId);
+        const albums = await fetchAlbumsByArtist(artistId);
+        const top = await fetchTopSongs();
 
         setArtist(artistData);
         setIsFollowing(artistData?.isFollowing || false);
         setArtistSongs(songs);
         setArtistAlbums(albums);
-
+        setTopSongs(top);
         setContext("artist");
         setContextId(artistId);
 
         if (from !== "youmaylike" && !hasFetchedSuggestions.current) {
-          const suggested = await fetchSuggestedArtists(artistId);
-          setSuggestedArtists(suggested.filter(a => a._id !== artistId));
+          setSuggestedArtists(suggested.filter(a => a._id !== artistId && a.id !== artistId));
           hasFetchedSuggestions.current = true;
         }
-
-        const top = await fetchTopSongs();
-        setTopSongs(top);
       } catch (err) {
-        console.error("❌ Error loading artist data:", err);
+        console.error("❌ Error loading data:", err);
+        setError(err.message || "Failed to load artist data");
       } finally {
         setLoading(false);
       }
@@ -82,14 +89,25 @@ export default function ArtistDetailPage() {
     loadData();
   }, [artistId, from]);
 
+  useEffect(() => {
+    if (artistId) {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (!navigationLevel || searchParams.get("from") !== "youmaylike") {
+        setNavigationLevel(1);
+      } else {
+        setNavigationLevel(2);
+      }
+    }
+  }, [artistId]);
+
   const handlePlayAll = () => {
     if (artistSongs.length > 0) {
       setSongs(artistSongs);
       setContext("artist");
       setContextId(artistId);
-      setTimeout(() => {
-        playSong(artistSongs[0]);
-      }, 0);
+      playSong(artistSongs[0]);
+      setIsPlaying(true);
+      setTimeout(() => setIsPlaying(false), 2000);
     }
   };
 
@@ -109,10 +127,7 @@ export default function ArtistDetailPage() {
 
   const toggleFollow = async () => {
     const resolvedArtistId = artist?._id || artist?.id;
-    if (!resolvedArtistId) {
-      console.warn("⚠️ Artist ID is missing");
-      return;
-    }
+    if (!resolvedArtistId) return;
 
     try {
       if (isFollowing) {
@@ -135,6 +150,10 @@ export default function ArtistDetailPage() {
     }
   };
 
+  const toggleMenu = () => setShowMenu(prev => !prev);
+  const toggleShowSongs = () => setShowAllSongs(prev => !prev);
+  const toggleShowTopSongs = () => setShowAllTopSongs(prev => !prev);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[60vh] bg-gray-900">
@@ -143,12 +162,18 @@ export default function ArtistDetailPage() {
     );
   }
 
+  if (error || !artist) {
+    return (
+      <div className="flex justify-center items-center h-[60vh] bg-gray-900 text-gray-300">
+        {error || "Artist not found"}
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-900 text-white min-h-screen">
-      {/* Header ảnh lớn phong cách cũ */}
       <div className="relative h-[420px] w-full bg-gradient-to-br from-indigo-900 via-purple-800 to-black">
         <div className="absolute inset-0 bg-black/50" />
-
         <div className="relative z-10 flex flex-col md:flex-row items-center md:items-end h-full px-8 pb-8 gap-8">
           <div className="relative w-44 h-44 md:w-64 md:h-64 rounded-lg overflow-hidden shadow-2xl border-4 border-white/20">
             <Image
@@ -160,86 +185,35 @@ export default function ArtistDetailPage() {
             />
           </div>
           <div className="text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl font-bold drop-shadow-md">
-              {artist.name}
-            </h1>
-            <p className="mt-2 text-gray-300 max-w-2xl">
-              {artist.bio || "No bio available."}
-            </p>
+            <h1 className="text-4xl md:text-5xl font-bold drop-shadow-md">{artist.name}</h1>
+            <p className="mt-2 text-gray-300 max-w-2xl">{artist.bio || "No bio available."}</p>
             <p className="text-gray-400 text-sm mt-2">
-              Followers:{" "}
-              <span className="text-white font-semibold">
-                {artist.followerCount?.toLocaleString() || 0}
-              </span>
+              Followers: <span className="text-white font-semibold">{artist.followerCount?.toLocaleString() || 0}</span>
             </p>
             <div className="mt-4 flex flex-wrap gap-4">
-              <button
-                onClick={handlePlayAll}
-                className="bg-green-500 text-black font-semibold px-6 py-3 rounded-full flex items-center gap-2 hover:bg-green-400"
-              >
+              <button onClick={handlePlayAll} className="bg-green-500 text-black font-semibold px-6 py-3 rounded-full flex items-center gap-2 hover:bg-green-400">
                 <Play size={20} /> Play All
               </button>
-              <button
-                onClick={handleShuffle}
-                className={`px-6 py-3 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105 ${
-                  isShuffling
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                }`}
-              >
-                <Shuffle size={20} />
-                Shuffle
+              <button onClick={handleShuffle} className={`px-6 py-3 rounded-full flex items-center gap-2 ${isShuffling ? "bg-green-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
+                <Shuffle size={20} /> Shuffle
               </button>
-              <button
-                onClick={toggleFollow}
-                className={`px-6 py-3 rounded-full flex items-center gap-2 transition-colors duration-300 ${
-                  isFollowing
-                    ? "bg-green-600 text-white hover:bg-green-400"
-                    : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                }`}
-              >
-                {isFollowing ? (
-                  <>
-                    <Heart size={20} fill="currentColor" /> Following
-                  </>
-                ) : (
-                  <>
-                    <Heart size={20} /> Follow
-                  </>
-                )}
+              <button onClick={toggleFollow} className={`px-6 py-3 rounded-full flex items-center gap-2 ${isFollowing ? "bg-green-600 text-white hover:bg-green-400" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
+                {isFollowing ? <><Heart size={20} fill="currentColor" /> Following</> : <><Heart size={20} /> Follow</>}
               </button>
               <div className="relative">
-                <button
-                  onClick={() => setShowMenu(prev => !prev)}
-                  className={`px-6 py-3 rounded-full flex items-center gap-2 ${
-                    showMenu
-                      ? "bg-green-600"
-                      : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                  }`}
-                >
+                <button onClick={toggleMenu} className={`px-6 py-3 rounded-full flex items-center gap-2 ${showMenu ? "bg-green-600" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
                   <MoreHorizontal size={20} /> More
                 </button>
                 {showMenu && (
                   <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                    <button
-                      className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2"
-                      onClick={handleShare}
-                    >
+                    <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2" onClick={handleShare}>
                       <Share2 size={18} /> Share
                     </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2"
-                      onClick={handleAddToPlaylist}
-                    >
+                    <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center gap-2" onClick={handleAddToPlaylist}>
                       <Plus size={18} /> Add to Playlist
                     </button>
-                    <Link
-                      href={`/artist/${artist._id}`}
-                      className="block px-4 py-2 hover:bg-gray-700 text-sm text-gray-300"
-                      onClick={() => setShowMenu(false)}
-                    >
-                      <Eye size={18} className="inline-block mr-2" />
-                      View Artist
+                    <Link href={`/artist/${artist._id}`} className="block px-4 py-2 hover:bg-gray-700 text-sm text-gray-300" onClick={() => setShowMenu(false)}>
+                      <Eye size={18} className="inline-block mr-2" /> View Artist
                     </Link>
                   </div>
                 )}

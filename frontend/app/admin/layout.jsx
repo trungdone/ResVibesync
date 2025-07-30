@@ -1,13 +1,23 @@
 "use client";
 
 import Link from "next/link";
+<<<<<<< HEAD
 import { motion } from "framer-motion";
+=======
+<<<<<<< HEAD
+=======
+import { motion } from "framer-motion";
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
 import { Music, Users, FileText, Settings, List, BarChart, MessageSquare } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { MusicProvider } from "@/context/music-context";
 import Header from "@/components/layout/header";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+<<<<<<< HEAD
+=======
 import { NotificationProvider } from "@/context/notification-context";
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
 
 const queryClient = new QueryClient();
 
@@ -25,7 +35,19 @@ export default function AdminLayout({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
       <MusicProvider>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        <div className="flex flex-col min-h-screen bg-gray-900">
+          <Header />
+          <div className="flex flex-1">
+            <aside className="w-64 bg-gray-800 text-white p-4">
+              <div className="flex items-center gap-2 mb-8">
+                <Music size={32} />
+                <h1 className="text-2xl font-bold">Admin Panel</h1>
+=======
         <NotificationProvider>
+>>>>>>> main
         <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
           <Header />
           <div className="flex flex-1">
@@ -40,10 +62,69 @@ export default function AdminLayout({ children }) {
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent">
                   Admin Panel
                 </h1>
+<<<<<<< HEAD
+=======
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
               </div>
               <nav className="space-y-2">
                 <Link
                   href="/admin/dashboard"
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-700"
+                >
+                  <BarChart size={20} /> Dashboard
+                </Link>
+                <Link
+                  href="/admin/songs"
+                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-700"
+                >
+                  <Music size={20} /> Songs
+                </Link>
+                <Link
+                  href="/admin/users"
+                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-700"
+                >
+                  <Users size={20} /> Users
+                </Link>
+                <Link
+                  href="/admin/artists"
+                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-700"
+                >
+                  <Users size={20} /> Artists
+                </Link>
+                <Link
+                  href="/admin/playlists"
+                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-700"
+                >
+                  <List size={20} /> Playlists
+                </Link>
+                <Link
+                  href="/admin/ai-config"
+                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-700"
+                >
+                  <Settings size={20} /> AI Config
+                </Link>
+                <Link
+                  href="/admin/comments"
+                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-700"
+                >
+                  <MessageSquare size={20} /> Comments
+                </Link>
+                <Link
+                  href="/admin/logs"
+                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-700"
+                >
+                  <FileText size={20} /> Logs
+                </Link>
+                <button
+                  onClick={signOut}
+                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-700 w-full text-left"
+                >
+=======
+>>>>>>> main
                   className="flex items-center gap-3 p-3 rounded-lg text-gray-200 hover:bg-gradient-to-r hover:from-green-500/20 hover:to-green-600/20 hover:text-green-400 transition-all duration-200 group"
                 >
                   <motion.div
@@ -152,14 +233,28 @@ export default function AdminLayout({ children }) {
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
                     </svg>
                   </motion.div>
+<<<<<<< HEAD
+=======
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main
                   Sign Out
                 </button>
               </nav>
             </aside>
+<<<<<<< HEAD
+            <main className="flex-1 p-8 bg-gray-900/90 rounded-lg shadow-inner ml-64">{children}</main>
+=======
+<<<<<<< HEAD
+            <main className="flex-1 p-8">{children}</main>
+>>>>>>> main
+          </div>
+        </div>
+=======
             <main className="flex-1 p-8 bg-gray-900/90 rounded-lg shadow-inner ml-64">{children}</main>
           </div>
         </div>
         </NotificationProvider>
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
       </MusicProvider>
     </QueryClientProvider>
   );

@@ -8,8 +8,9 @@ class AlbumBase(BaseModel):
     artist_id: str
     cover_art: Optional[HttpUrl] = None  # Cho phép cover_art là None
     release_year: int
-    genres: List[str]
-    songs: List[str]  # Danh sách ObjectId của bài hát
+    genres: List[str]                    # Đổi thành genres dạng List
+    songs: List[str]                     # Danh sách ObjectId của bài hát (dưới dạng str)
+
 
     @validator("release_year")
     def validate_release_year(cls, v):
@@ -23,7 +24,7 @@ class AlbumCreate(AlbumBase):
 class AlbumUpdate(BaseModel):
     title: Optional[str] = None
     artist_id: Optional[str] = None
-    cover_art: Optional[HttpUrl] = None  
+    cover_art: Optional[HttpUrl] = None
     release_year: Optional[int] = None
     genres: Optional[List[str]] = None
     songs: Optional[List[str]] = None

@@ -1,165 +1,92 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
-import { useNotifications } from "@/context/notification-context";
-import { getAllPlaylists } from "@/lib/api/playlists";
-import { fetchHistory, fetchFollowingArtists, fetchLikedSongs } from "@/lib/api/user";
-import { fetchArtistSuggestions } from "@/lib/api/artists";
-import { toast } from "@/components/ui/use-toast";
-import RequestArtistPopup from "@/components/profile/RequestArtistPopup";
-import ProfileHeader from "@/components/profile/ProfileHeader";
-import ProfileTabs from "@/components/profile/ProfileTabs";
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import axios from "axios"
+import { Settings, UserPlus } from "lucide-react"
+import { useAuth } from "@/context/auth-context"
+const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/<your_cloud_name>/"
+
+import Footer from "@/components/layout/footer"
+
 
 export default function ProfilePage() {
-  const { user, loading: authLoading } = useAuth();
-  const [playlists, setPlaylists] = useState([]);
-  const [likedSongs, setLikedSongs] = useState([]);
-  const [historySongs, setHistorySongs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { addNotification } = useNotifications();
-  const router = useRouter();
-  const [followingArtists, setFollowingArtists] = useState([]);
-  const [requestSent, setRequestSent] = useState(false);
-  const [showRequestForm, setShowRequestForm] = useState(false);
-  const [requestData, setRequestData] = useState({
-    name: "",
-    bio: "",
-    social_links: [],
-    genres: [],
-    phone: "",
-    image: "",
-  });
-  const [suggestions, setSuggestions] = useState([]);
-  const [selectedArtistId, setSelectedArtistId] = useState(null);
-
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [showNotice, setShowNotice] = useState(false);
+  const [user, setUser] = useState(null)
+  const router = useRouter()
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.push("/signin");
-      return;
-    }
-
-    const loadData = async () => {
+    const fetchUser = async () => {
       try {
-        setLoading(true);
-
-        const playlistData = await getAllPlaylists();
-        setPlaylists(playlistData.slice(0, 8) || []);
-
-        const likedRes = await fetchLikedSongs();
-        setLikedSongs(likedRes.liked || []);
-
-        const historyRes = await fetchHistory(user.id);
-        setHistorySongs(historyRes.history || []);
-
-        const followingData = await fetchFollowingArtists();
-        setFollowingArtists(followingData.following || []);
+        const res = await axios.get("http://localhost:8000/user/me", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        })
+        setUser(res.data)
       } catch (err) {
-        console.error("❌ Lỗi khi load dữ liệu profile:", err);
-        toast({
-          title: "Lỗi",
-          description: "Không thể tải dữ liệu hồ sơ.",
-          variant: "destructive",
-        });
-        router.push("/signin");
-      } finally {
-        setLoading(false);
+        router.push("/signin")
       }
-    };
-
-    loadData();
-  }, [user, authLoading, router]);
-
-  useEffect(() => {
-    const delay = setTimeout(async () => {
-      if (requestData.name.length < 2) return;
-      const results = await fetchArtistSuggestions(requestData.name);
-      setSuggestions(results);
-    }, 300);
-    return () => clearTimeout(delay);
-  }, [requestData.name]);
-
-  const handleRequestSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/artist_requests", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...requestData,
-          matched_artist_id: selectedArtistId || null,
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to submit artist request");
-
-      setSuccess("Artist request submitted successfully");
-      addNotification({
-        type: "info",
-        title: "Artist Request Sent",
-        message: "Your artist request has been sent and is pending review.",
-        created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
-      });
-
-      setShowRequestForm(false);
-    } catch (err) {
-      setError(err.message);
     }
-  };
+    fetchUser()
+  }, [])
 
-  if (authLoading || loading || !user) {
-    return <div className="flex justify-center items-center h-[60vh]">Loading...</div>;
-  }
+  if (!user) return <div className="text-white p-10">Loading...</div>
+
+  const avatarUrl = user.avatar?.startsWith("http")
+    ? user.avatar
+    : `${CLOUDINARY_BASE_URL}${user.avatar || "images/default.jpg"}`
 
   return (
-    <div className="space-y-6 pb-20">
-      <ProfileHeader
-        user={user}
-        playlists={playlists}
-        followingArtists={followingArtists}
-        showNotice={showNotice}
-        setShowNotice={setShowNotice}
-        setShowRequestForm={setShowRequestForm}
-        requestSent={requestSent}
-      />
-
-      {showRequestForm && (
-        <RequestArtistPopup
-          requestData={requestData}
-          setRequestData={setRequestData}
-          suggestions={suggestions}
-          setSuggestions={setSuggestions}
-          setShowRequestForm={setShowRequestForm}
-          selectedArtistId={selectedArtistId}
-          setSelectedArtistId={setSelectedArtistId}
-          setRequestSent={setRequestSent}
-          error={error}
-          success={success}
-          onSuccess={() => setRequestSent(true)}
-          handleSubmit={handleRequestSubmit}
-          closePopup={() => setShowRequestForm(false)}
+    <div className="min-h-screen bg-black text-white">
+      {/* === HEADER SECTION === */}
+      <div className="relative bg-gradient-to-b from-[#1f1f1f] to-black">
+        {/* Blurred Background */}
+        <div
+          className="absolute inset-0 bg-cover bg-center blur-2xl opacity-20"
+          style={{ backgroundImage: `url('${avatarUrl}')` }}
         />
-      )}
+        
+        {/* Foreground Content */}
+        <div className="relative z-10 px-6 py-10 sm:py-16 flex items-end gap-6">
+          {/* Avatar */}
+          <img
+            src={avatarUrl}
+            alt="User Avatar"
+            className="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover shadow-lg border-4 border-white"
+          />
 
-      <ProfileTabs
-        playlists={playlists}
-        likedSongs={likedSongs}
-        historySongs={historySongs}
-        followingArtists={followingArtists}
-      />
+          {/* Name + Email */}
+          <div>
+            <h1 className="text-4xl sm:text-5xl font-bold">{user.name}</h1>
+            <p className="text-gray-300 mt-2 text-sm sm:text-base">{user.email}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* === ACTION BUTTONS === */}
+      <div className="px-6 py-8 max-w-4xl mx-auto">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            onClick={() => router.push("/artist/become")}
+            className="bg-purple-500 hover:bg-purple-400 text-black font-semibold px-6 py-3 rounded-full transition flex items-center gap-2 justify-center"
+          >
+            <UserPlus size={20} />
+            Become an Artist
+          </button>
+
+          <button
+            onClick={() => router.push("/profile/settings")}
+            className="bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white font-semibold px-6 py-3 rounded-full transition flex items-center gap-2 justify-center"
+          >
+            <Settings size={20} />
+            Account Settings
+          </button>
+        </div>
+      </div>
+    
+      <Footer />
+
     </div>
-  );
+
+  )
 }

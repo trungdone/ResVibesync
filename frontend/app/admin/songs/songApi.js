@@ -5,6 +5,27 @@ axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
 const API_URL = "http://localhost:8000/api";
 
+<<<<<<< HEAD
+export async function fetchSongs(params = { skip: 0, limit: 100 }) {
+=======
+<<<<<<< HEAD
+export async function fetchSongs(params = {}) {
+>>>>>>> main
+  const token = localStorage.getItem("token");
+  const query = new URLSearchParams(params).toString();
+  const response = await axios.get(`${API_URL}/admin/songs?${query}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+}
+
+export async function fetchSongById(id) {
+  const token = localStorage.getItem("token");
+  const response = await axios.get(`${API_URL}/admin/songs/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+=======
 export async function fetchSongs(params = { skip: 0, limit: 100 }) {
   const token = localStorage.getItem("token");
   const query = new URLSearchParams(params).toString();
@@ -71,10 +92,32 @@ export async function fetchAlbumById(id) {
     console.error("Fetch album by id error:", error);
     throw new Error(`Failed to load album ${id}`);
   }
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
 }
 
 export async function createSong(data) {
   const token = localStorage.getItem("token");
+<<<<<<< HEAD
+  console.log("Data being sent:", data); // Thêm log để kiểm tra
+  const response = await axios.post(`${API_URL}/admin/songs`, data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+}
+
+export async function updateSong(id, data) {
+  const token = localStorage.getItem("token");
+  const response = await axios.put(`${API_URL}/admin/songs/${id}`, data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+=======
 
   // ép kiểu trước khi gọi API
   const cleaned = {
@@ -112,10 +155,17 @@ export async function updateSong(id, data) {
     console.error("Update song error:", error);
     throw new Error("Failed to update song");
   }
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
 }
 
 export async function deleteSong(id) {
   const token = localStorage.getItem("token");
+<<<<<<< HEAD
+  const response = await axios.delete(`${API_URL}/admin/songs/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+=======
   try {
     const response = await axios.delete(`${API_URL}/admin/songs/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -125,10 +175,34 @@ export async function deleteSong(id) {
     console.error("Delete song error:", error);
     throw new Error("Failed to delete song");
   }
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
 }
 
 export async function uploadMedia(formData) {
   const token = localStorage.getItem("token");
+<<<<<<< HEAD
+  const response = await axios.post(`${API_URL}/admin/songs/upload`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+}
+
+// songApi.js
+export async function fetchArtists() {
+  const token = localStorage.getItem("token");
+  const response = await axios.get(`${API_URL}/admin/artists`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+<<<<<<< HEAD
+}
+=======
+}
+
+=======
   try {
     const response = await axios.post(`${API_URL}/admin/upload`, formData, {
       headers: {
@@ -142,3 +216,5 @@ export async function uploadMedia(formData) {
     throw new Error("Failed to upload media");
   }
 }
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
+>>>>>>> main

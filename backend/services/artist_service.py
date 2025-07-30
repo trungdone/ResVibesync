@@ -13,6 +13,7 @@ class ArtistService:
         self.artist_repo = ArtistRepository()
         self.song_repo = SongRepository()
         self.album_repo = AlbumRepository()
+        
 
     def _build_artist_in_db(self, artist: dict, include_songs_albums: bool = False, artist_id: Optional[ObjectId] = None) -> ArtistInDB:
         if include_songs_albums and artist_id:
@@ -114,3 +115,17 @@ class ArtistService:
             return True
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to unfollow artist: {str(e)}")
+        
+    def get_all_artists_simple(self):
+        artists = self.artist_repo.find_all()
+        return [
+            {
+                "_id": str(a["_id"]),
+                "name": a["name"],
+                "normalizedName": a.get("normalizedName", "").lower(),  # ✅ Thêm dòng này để hỗ trợ so khớp
+                "aliases": a.get("aliases", []),
+                "bio": a.get("bio", ""),
+            }
+            for a in artists
+        ]
+

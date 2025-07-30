@@ -3,15 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useMusic } from "@/context/music-context";
 
 const fetchRecommendations = async (userId, limit = 12) => {
   try {
     const res = await fetch(
-      `http://localhost:8000/api/recommendations?user_id=${userId}&limit=${limit}`
+      `http://localhost:8000/api/recommendations?user_id=${userId}&limit=${limit}&t=${Date.now()}` // 💡 tránh cache
     );
     if (!res.ok) throw new Error("Failed to fetch recommendations");
     const data = await res.json();
-    console.log("🎵 Recommended songs:", data);
+    console.log("✅ New recommended songs:", data); // LOG kết quả
     return data;
   } catch (err) {
     console.error("❌ Fetch error:", err.message);
@@ -23,6 +24,7 @@ export default function RecommendSection() {
   const [songs, setSongs] = useState([]);
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { currentSong } = useMusic(); // 🎯 dùng để theo dõi bài đang phát
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("user_id");
@@ -33,10 +35,21 @@ export default function RecommendSection() {
     }
 
     setUserId(storedUserId);
-    fetchRecommendations(storedUserId, 12)
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    console.log("🔄 Fetching recommendations again for user:", userId);
+    if (currentSong) {
+      console.log("🎧 Current song listened:", currentSong.title);
+    }
+
+    setLoading(true);
+    fetchRecommendations(userId, 12)
       .then(setSongs)
       .finally(() => setLoading(false));
-  }, []);
+  }, [userId, currentSong?._id]); // 💡 Gọi lại mỗi lần đổi bài
 
   if (loading) return null;
 

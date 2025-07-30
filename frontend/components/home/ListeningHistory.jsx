@@ -12,19 +12,31 @@ export default function ListeningHistory() {
   useEffect(() => {
     if (user?.id) {
       console.log("🟡 Gửi request lịch sử cho user:", user.id);
+
       fetch(`http://localhost:8000/api/history/user/${user.id}`)
         .then((res) => res.json())
         .then((data) => {
-          console.log("🟢 Lịch sử nhận được:", data.history);
-          setHistory(data.history || []);
+          console.log("📥 Response từ API:", data);
+
+          const sorted = (data.history || []).sort(
+            (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+          );
+
+          console.log("🟢 Lịch sử sau khi sắp xếp:", sorted);
+          setHistory(sorted);
         })
         .catch((err) => {
           console.error("🔴 Lỗi khi lấy lịch sử:", err);
         });
+    } else {
+      console.log("⚠️ user.id chưa sẵn sàng");
     }
   }, [user]);
 
-  if (!user?.id || history.length === 0) return null;
+  // ❗️Có thể thêm fallback nếu không có user hoặc lịch sử
+  if (!user?.id || history.length === 0) {
+    return null; // Hoặc return fallback UI tùy ý
+  }
 
   return (
     <div className="px-4 sm:px-8">
@@ -44,17 +56,17 @@ export default function ListeningHistory() {
             <div className="group cursor-pointer">
               <div className="aspect-square relative rounded-md overflow-hidden shadow-sm">
                 <Image
-                  src={item.song_info.coverArt || "/placeholder.svg"}
-                  alt={item.song_info.title}
+                  src={item.song_info?.coverArt || "/placeholder.svg"}
+                  alt={item.song_info?.title || "No Title"}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
               <div className="mt-2 text-sm font-medium truncate">
-                {item.song_info.title}
+                {item.song_info?.title || "Unknown Title"}
               </div>
               <div className="text-xs text-gray-400 truncate">
-                {item.song_info.artist}
+                {item.song_info?.artist || "Unknown Artist"}
               </div>
             </div>
           </Link>

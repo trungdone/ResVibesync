@@ -2,6 +2,7 @@ from database.db import albums_collection
 from bson import ObjectId
 from bson.errors import InvalidId
 from typing import List, Optional, Dict
+from datetime import datetime
 
 class AlbumRepository:
     def __init__(self):
@@ -24,8 +25,12 @@ class AlbumRepository:
         except Exception as e:
             raise ValueError(f"Failed to query albums: {str(e)}")
 
-    def find_by_id(self, album_id: str) -> Optional[Dict]:
-        return albums_collection.find_one({"_id": AlbumRepository._validate_object_id(album_id)})
+    @staticmethod
+    def find_by_id(album_id: str) -> Optional[Dict]:
+        try:
+            return albums_collection.find_one({"_id": AlbumRepository._validate_object_id(album_id)})
+        except Exception as e:
+            raise ValueError(f"Failed to find album by id: {str(e)}")
 
     def find_by_title(self, title: str) -> List[Dict]:
         try:
@@ -52,9 +57,8 @@ class AlbumRepository:
 
     @staticmethod
     def update(album_id: str, update_data: Dict) -> bool:
-        from datetime import datetime
-        update_data["updated_at"] = datetime.utcnow()
         try:
+            update_data["updated_at"] = datetime.utcnow()
             result = albums_collection.update_one(
                 {"_id": AlbumRepository._validate_object_id(album_id)},
                 {"$set": update_data}
@@ -89,7 +93,7 @@ class AlbumRepository:
             return result.modified_count > 0
         except Exception as e:
             raise ValueError(f"Failed to add song to album: {str(e)}")
-        
+
     @staticmethod
     def remove_song_from_album(album_id: str, song_id: str) -> bool:
         try:
@@ -100,4 +104,3 @@ class AlbumRepository:
             return result.modified_count > 0
         except Exception as e:
             raise ValueError(f"Failed to remove song from album: {str(e)}")
-

@@ -66,6 +66,7 @@ export async function fetchHistory(userId) {
   return await res.json();
 }
 
+
 export async function fetchLikedSongs() {
   const token = localStorage.getItem("token");
 
@@ -79,6 +80,7 @@ export async function fetchLikedSongs() {
 
   return await res.json(); 
 }
+
 
 
 

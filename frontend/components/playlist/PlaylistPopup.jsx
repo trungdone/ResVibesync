@@ -116,3 +116,4 @@ export default function PlaylistPopup({ isOpen, onClose, song, onAdded }) {
     document.body
   );
 }
+

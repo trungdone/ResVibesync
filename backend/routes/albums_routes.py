@@ -61,8 +61,3 @@ async def get_album_songs(id: str):
     except Exception as e:
         print(f"❌ [API] Error in get_album_songs: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch songs for album: {str(e)}")
-
-
-
-
-

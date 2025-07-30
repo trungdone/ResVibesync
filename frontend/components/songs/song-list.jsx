@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Heart, MoreHorizontal, X } from "lucide-react";
+import { Play, MoreHorizontal, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useMusic } from "@/context/music-context";
 import { formatDuration } from "@/lib/utils";
 import WaveBars from "@/components/ui/WaveBars";
 import SongActionsMenu from "./song-actions-menu";
+import LikeSongButton from "@/components/liked-button/LikeButton";
 
 export default function SongList({ songs: propSongs }) {
   const {
@@ -23,7 +24,6 @@ export default function SongList({ songs: propSongs }) {
 
   const [optionsOpenId, setOptionsOpenId] = useState(null);
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
-  const [likedSongs, setLikedSongs] = useState(new Set());
   const moreBtnRefs = useRef({});
   const popupRef = useRef(null);
   const observerRef = useRef(null);
@@ -37,16 +37,10 @@ export default function SongList({ songs: propSongs }) {
       togglePlayPause();
     } else {
       setSongs(propSongs);
-      setContext("region"); // 👉 Đặt context là region (hoặc đặt tên rõ ràng hơn nếu muốn)
+      setContext("region"); // tuỳ theo ngữ cảnh list
       setContextId(null);
       playSong(song);
     }
-  };
-
-  const toggleLike = (songId) => {
-    const updated = new Set(likedSongs);
-    updated.has(songId) ? updated.delete(songId) : updated.add(songId);
-    setLikedSongs(updated);
   };
 
   const toggleOptions = (songId) => {
@@ -87,6 +81,7 @@ export default function SongList({ songs: propSongs }) {
   }, [optionsOpenId]);
 
   const handleLyrics = () => setOptionsOpenId(null);
+
   const handlePlayNext = () => {
     nextSong();
     setOptionsOpenId(null);
@@ -120,8 +115,8 @@ export default function SongList({ songs: propSongs }) {
         }}
       >
         <table className="w-full text-sm text-left">
-          <thead className="sticky top-0 bg-zinc-700 z-10">
-            <tr className="border-b border-zinc-700 text-white uppercase">
+          <thead className="sticky top-0 bg-zinc-800 z-10">
+            <tr className="border-b border-zinc-700 text-gray-200 uppercase">
               <th className="p-3 w-10 font-medium">#</th>
               <th className="p-3 font-medium">Title</th>
               <th className="p-3 font-medium hidden md:table-cell">Album</th>
@@ -131,8 +126,8 @@ export default function SongList({ songs: propSongs }) {
           </thead>
           <tbody>
             {propSongs.map((song, index) => {
-              const isCurrent = currentSong?.id?.toString() === song.id?.toString();
-              const isLiked = likedSongs.has(song.id);
+              const isCurrent =
+                currentSong?.id?.toString() === song.id?.toString();
 
               return (
                 <tr
@@ -144,18 +139,22 @@ export default function SongList({ songs: propSongs }) {
                   <td className="p-3 text-gray-200 relative">
                     <div className="w-6 h-6 flex items-center justify-center relative">
                       {!isCurrent || !isPlaying ? (
-                        <span className="transition-opacity duration-300 group-hover:opacity-0">{index + 1}</span>
+                        <span className="transition-opacity duration-300 group-hover:opacity-0">
+                          {index + 1}
+                        </span>
                       ) : (
                         <WaveBars className="text-purple-400" />
                       )}
                       <button
                         onClick={() => handlePlayClick(song)}
                         className="absolute inset-0 flex items-center justify-center text-white hover:text-purple-300 transition-colors opacity-0 group-hover:opacity-100"
+                        aria-label="Play"
                       >
                         <Play size={16} />
                       </button>
                     </div>
                   </td>
+
                   <td className="p-3 hover:scale-105 origin-center transition-transform duration-300">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0 relative">
@@ -163,17 +162,46 @@ export default function SongList({ songs: propSongs }) {
                           src={song.coverArt || "/placeholder.svg"}
                           alt={song.title || "Cover"}
                           fill
-                          className={`object-cover ${isCurrent && isPlaying ? "animate-pulse" : ""}`}
+                          className={`object-cover ${
+                            isCurrent && isPlaying ? "animate-pulse" : ""
+                          }`}
                         />
                       </div>
-                      <div>
-                        <Link href={`/song/${song.id}`} className="text-white font-medium hover:underline">
+
+                      <div className="relative group">
+                        <Link
+                          href={`/song/${song.id}`}
+                          className="text-gray-100 font-medium hover:underline"
+                        >
                           {song.title}
                         </Link>
-                        <div className="text-gray-200 text-sm">{song.artist}</div>
+                        <div className="text-sm text-gray-400">
+                          {song.artist}
+                        </div>
+
+                        {/* Tooltip */}
+                        <div className="absolute z-50 hidden group-hover:block top-full left-0 mt-2 w-64 p-3 bg-zinc-800 text-white text-xs rounded shadow-lg border border-zinc-700">
+                          <div>
+                            <strong>Artist:</strong> {song.artist}
+                          </div>
+                          <div>
+                            <strong>Album:</strong> {song.album || "Unknown"}
+                          </div>
+                          <div>
+                            <strong>Genre:</strong>{" "}
+                            {Array.isArray(song.genre)
+                              ? song.genre.join(", ")
+                              : song.genre || "Unknown"}
+                          </div>
+                          <div>
+                            <strong>Release Year:</strong>{" "}
+                            {song.releaseYear || "Unknown"}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </td>
+
                   <td className="p-3 text-gray-200 hidden md:table-cell hover:scale-105 origin-center transition-transform duration-300">
                     {song.album || "N/A"}
                   </td>
@@ -182,16 +210,12 @@ export default function SongList({ songs: propSongs }) {
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => toggleLike(song.id)}
-                        className={`hover:text-white ${isLiked ? "text-pink-500" : "text-gray-200"}`}
-                      >
-                        <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
-                      </button>
+                      <LikeSongButton songId={song.id} />
                       <button
                         ref={(el) => (moreBtnRefs.current[song.id] = el)}
                         onClick={() => toggleOptions(song.id)}
                         className="text-gray-200 hover:text-white"
+                        aria-label="More options"
                       >
                         <MoreHorizontal size={18} />
                       </button>
@@ -213,7 +237,10 @@ export default function SongList({ songs: propSongs }) {
           <div className="flex gap-3">
             <div className="w-14 h-14 relative rounded overflow-hidden flex-shrink-0">
               <Image
-                src={propSongs.find((s) => s.id === optionsOpenId)?.coverArt || "/placeholder.svg"}
+                src={
+                  propSongs.find((s) => s.id === optionsOpenId)?.coverArt ||
+                  "/placeholder.svg"
+                }
                 alt="cover"
                 fill
                 className="object-cover"
@@ -227,7 +254,10 @@ export default function SongList({ songs: propSongs }) {
                 {propSongs.find((s) => s.id === optionsOpenId)?.artist}
               </div>
             </div>
-            <button onClick={() => setOptionsOpenId(null)} className="text-gray-200 hover:text-white">
+            <button
+              onClick={() => setOptionsOpenId(null)}
+              className="text-gray-200 hover:text-white"
+            >
               <X size={16} />
             </button>
           </div>
@@ -238,16 +268,28 @@ export default function SongList({ songs: propSongs }) {
               onClose={() => setOptionsOpenId(null)}
             />
             <ul className="text-sm mt-2 space-y-2">
-              <li onClick={handleLyrics} className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white">
+              <li
+                onClick={handleLyrics}
+                className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white"
+              >
                 Lyrics
               </li>
-              <li onClick={handlePlayNext} className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white">
+              <li
+                onClick={handlePlayNext}
+                className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white"
+              >
                 Play Next
               </li>
-              <li onClick={handleBlock} className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white">
+              <li
+                onClick={handleBlock}
+                className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white"
+              >
                 Block
               </li>
-              <li onClick={handleCopyLink} className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white">
+              <li
+                onClick={handleCopyLink}
+                className="hover:bg-zinc-700 rounded p-2 cursor-pointer text-white"
+              >
                 Copy Link
               </li>
             </ul>

@@ -29,5 +29,3 @@ export async function fetchAlbumsIncludingSong(songId) {
   // lọc client-side
   return albums.filter((album) => album.songs.includes(songId));
 }
-
-

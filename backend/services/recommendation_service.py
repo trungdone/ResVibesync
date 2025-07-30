@@ -1,4 +1,4 @@
-from database.db import songs_collection, history_collection, chat_history_collection
+from database.db import songs_collection, song_history_collection, chat_history_collection
 from bson import ObjectId
 from collections import Counter
 import re
@@ -18,7 +18,7 @@ def get_recommendations(user_id: str, limit: int = 20):
     print("🔁 Running hybrid recommendation engine for user:", user_id)
 
     # 1. Lấy lịch sử nghe
-    history = list(history_collection.find({"user_id": ObjectId(user_id)}))
+    history = list(song_history_collection.find({"user_id": ObjectId(user_id)}))
     song_ids = [ObjectId(entry["song_id"]) for entry in history]
     listened_songs = list(songs_collection.find({"_id": {"$in": song_ids}}))
 

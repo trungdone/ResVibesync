@@ -8,3 +8,7 @@ __pycache__/
 frontend/.next/
 frontend/.npm-cache/
 node_modules/
+.next/
+.turbo/
+node_modules/
+.npm-cache/

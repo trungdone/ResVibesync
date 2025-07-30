@@ -10,6 +10,8 @@ import CustomCreatePlaylistModal from "@/components/playlist/CustomCreatePlaylis
 import { getAllPlaylists } from "@/lib/api/playlists";
 import { useAuth } from "@/context/auth-context";
 import { useMusic } from "@/context/music-context";
+import { setPlaylistRefreshFunction } from "@/lib/api/playlist-refresh";;
+
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -31,17 +33,22 @@ export default function Sidebar() {
   useEffect(() => {
     if (!user?.id) return;
 
-    async function loadPlaylists() {
+    const loadPlaylists = async () => {
       try {
         const playlistsData = await getAllPlaylists(user.id);
         setPlaylists(playlistsData || []);
       } catch (e) {
         console.error("Failed to load playlists:", e);
       }
-    }
+    };
 
     loadPlaylists();
+
+    // ✅ Register global trigger
+    setPlaylistRefreshFunction(loadPlaylists);
   }, [user]);
+
+
 
   const isActive = (path) => pathname === path;
 
@@ -132,13 +139,13 @@ export default function Sidebar() {
 
           <div className="space-y-1">
             <Link
-              href="/playlist/liked"
+              href="/liked"
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-white/5 text-gray-400 hover:text-white"
             >
               <div className="w-6 h-6 flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-400 rounded-sm">
                 <Heart size={12} className="text-white" />
               </div>
-              <span>Liked Songs</span>
+              <span>Liked</span>
             </Link>
 
             {playlists.map((playlist) => (

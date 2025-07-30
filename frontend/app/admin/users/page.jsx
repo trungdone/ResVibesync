@@ -75,6 +75,8 @@ export default function UsersPage() {
     }
   };
 
+<<<<<<< HEAD
+=======
     // Handle demote artist
   const handleDemoteArtistToUser = async (userId, userName) => {
     const confirm = window.confirm(
@@ -138,6 +140,7 @@ export default function UsersPage() {
   };
 
 
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
   // Handle demote to user
   const handleDemoteToUser = async (userId, userName) => {
     const confirm = window.confirm(
@@ -269,6 +272,8 @@ export default function UsersPage() {
                   Promote to Admin
                 </button>
               )}
+<<<<<<< HEAD
+=======
               {user.role === "artist" && (
                 <button
                   onClick={() => handleDemoteArtistToUser(user.id, user.name)}
@@ -284,6 +289,7 @@ export default function UsersPage() {
               >
                 Delete
               </button>
+>>>>>>> 0463c946b4ff837dfbe2f4d26bf6c9d6bdddede6
               {user.banned ? (
                 <button
                   onClick={() => handleUnbanUser(user.id, user.name)}

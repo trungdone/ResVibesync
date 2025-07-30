@@ -1,6 +1,6 @@
 from bson import ObjectId
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
 from random import shuffle
@@ -42,7 +42,7 @@ class SongService:
             lyrics_lrc=song.get("lyrics_lrc", None),
             artistId=str(artist_id) if artist_id else "",
             created_at=song.get("created_at", datetime.utcnow()),
-            updated_at=song.get("updated_at", None)
+            updated_at=song.get("updated_at", None),
         )
 
     @staticmethod
@@ -53,12 +53,15 @@ class SongService:
         except (HTTPError, URLError):
             return False
 
+    # ----------------------------
+    # CRUD / Queries
+    # ----------------------------
     def get_all_songs(
         self,
         sort: Optional[str] = None,
         limit: Optional[int] = None,
         skip: Optional[int] = 0,
-        query: Optional[dict] = None
+        query: Optional[Dict] = None,
     ) -> List[SongInDB]:
         songs = self.song_repository.find_all(sort=sort, limit=limit, skip=skip, query=query)
         return [self._map_to_song_in_db(song) for song in songs]
@@ -108,13 +111,25 @@ class SongService:
     def delete_song(self, song_id: str) -> bool:
         return self.song_repository.delete(song_id)
 
-    def get_songs_by_genre(self, genre: str, page: int = 1, limit: int = 50) -> List[SongInDB]:
+    # ----------------------------
+    # Genre
+    # ----------------------------
+    def get_songs_by_genre(self, genre: str, page: int = 1, limit: Optional[int] = 50) -> List[SongInDB]:
         if not genre:
             raise ValueError("Genre is required")
         songs = self.song_repository.find_by_genre(genre, page, limit)
         return [self._map_to_song_in_db(song) for song in songs]
 
+    # ----------------------------
+    # Random & Region
+    # ----------------------------
     def get_random_songs(self, limit: int = 10, region: Optional[str] = None) -> List[SongInDB]:
+        """
+        Lấy danh sách ngẫu nhiên. Nếu có region:
+        - region == 'vietnamese' => chỉ lấy bài có genre chứa 'vietnamese'
+        - region khác => chỉ lấy bài không chứa 'vietnamese' (giả định quốc tế)
+        """
+        # Lấy nhiều hơn để lọc rồi chọn top 'limit'
         raw_songs = self.song_repository.get_random_songs(limit=limit * 3)
 
         if region:

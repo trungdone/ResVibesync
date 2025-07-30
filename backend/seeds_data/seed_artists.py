@@ -116,6 +116,7 @@ artists = [
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     },
+
             {
             "name": "Tuấn Cry",
             "bio": "ehhe",
@@ -152,6 +153,7 @@ artists = [
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
         },
+
 ]
 
 def seed_artists():

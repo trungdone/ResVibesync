@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -139,11 +140,14 @@ export default function FeaturedSection() {
               <Play size={18} /> Listen Now
             </Link>
             <Link href={`/artist/${featured.artistId || 1}`} className="btn-secondary">
+
               View Artist
             </Link>
           </div>
         </div>
       </div>
     </div>
+
   );
+
 }

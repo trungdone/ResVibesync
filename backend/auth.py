@@ -6,6 +6,7 @@ import os
 from services.user_service import UserService
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -57,11 +58,13 @@ async def get_current_admin(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=403, detail="Admin access only")
     return user
 
+
 async def get_current_artist(token: str = Depends(oauth2_scheme)):
     user = await get_current_user(token)
     if user["role"] != "artist":
         raise HTTPException(status_code=403, detail="Artist access only")
     return user
+
 
 from fastapi.security import HTTPBearer
 from fastapi import Security
@@ -89,3 +92,4 @@ async def get_optional_user(token: str = Security(bearer_scheme)):
         }
     except JWTError:
         return None
+

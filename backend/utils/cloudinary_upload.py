@@ -70,3 +70,29 @@ def delete_image_files(folder="images/"):
         print("🗑️ Deleted all image files in:", folder)
     except Exception as e:
         print("❌ Error deleting image files:", e)
+
+
+
+import cloudinary
+import cloudinary.uploader
+import os
+from dotenv import load_dotenv
+import cloudinary.uploader
+
+load_dotenv()
+
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True,
+)
+
+CLOUDINARY_BASE_URL = f"https://res.cloudinary.com/{os.getenv('CLOUDINARY_CLOUD_NAME')}/"
+
+def upload_image(file_path: str) -> dict:
+    result = cloudinary.uploader.upload(file_path, folder="avatars")
+    return result  # Return full response dict (includes secure_url, public_id, etc.)
+
+
+
