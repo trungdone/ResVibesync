@@ -1,10 +1,8 @@
-// components/artist/SuggestedArtists.jsx
 "use client";
-
 import Link from "next/link";
 import Image from "next/image";
 
-export default function SuggestedArtists({ artists }) {
+export default function SuggestedArtists({ artists = [] }) {
   if (!artists || artists.length === 0) return null;
 
   return (

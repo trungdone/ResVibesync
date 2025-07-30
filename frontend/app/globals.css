@@ -51,6 +51,34 @@ body {
   50% { height: 70%; }
 }
 
+@keyframes wobble {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  15% {
+    transform: rotate(8deg);
+  }
+  30% {
+    transform: rotate(-8deg);
+  }
+  45% {
+    transform: rotate(6deg);
+  }
+  60% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
+  90% {
+    transform: rotate(-3deg);
+  }
+}
+
+.animate-wobble {
+  animation: wobble 1.2s ease-in-out infinite;
+}
+
 .animate-wave1 {
   animation: wave1 1s infinite ease-in-out;
 }
@@ -71,6 +99,13 @@ body {
 @layer utilities {
   .animate-fadeIn {
     animation: fadeIn 0.2s ease-out forwards;
+  }
+    .slow-pulse {
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  .slow-ping {
+    animation: ping 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 }
 
@@ -115,6 +150,42 @@ body {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;     /* Firefox */
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;    /* Firefox */
+}
+
+.glow-text {
+  text-shadow:
+    0 0 4px rgba(255, 255, 255, 0.4),
+    0 0 8px rgba(255, 255, 255, 0.2),
+    0 0 12px rgba(138, 43, 226, 0.4),
+    0 0 16px rgba(255, 105, 180, 0.3);
+  animation: flicker 3s infinite ease-in-out;
+}
+
+@keyframes flicker {
+  0%, 100% {
+    text-shadow:
+      0 0 4px rgba(255, 255, 255, 0.4),
+      0 0 8px rgba(255, 255, 255, 0.2),
+      0 0 12px rgba(138, 43, 226, 0.4),
+      0 0 16px rgba(255, 105, 180, 0.3);
+  }
+  50% {
+    text-shadow:
+      0 0 6px rgba(255, 255, 255, 0.7),
+      0 0 12px rgba(255, 255, 255, 0.4),
+      0 0 18px rgba(138, 43, 226, 0.6),
+      0 0 24px rgba(255, 105, 180, 0.5);
+  }
+}
+
 
 
 

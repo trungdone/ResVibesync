@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Settings, UserPlus } from "lucide-react"
+import { useRouter } from "next/navigation";
 
 export default function ProfileHeader({
   user,
@@ -13,6 +15,7 @@ export default function ProfileHeader({
   requestSent,
   setRequestSent
 }) {
+  const router = useRouter();
   return (
     <div className="flex items-center gap-8">
       <div className="relative w-32 h-32 rounded-full overflow-hidden">
@@ -48,32 +51,46 @@ export default function ProfileHeader({
           </div>
         </div>
 
-        {user.role !== "artist" && (
-          !showNotice ? (
-            <Button onClick={() => setShowNotice(true)} className="btn-primary mt-4">
-              Become an Artist
-            </Button>
-          ) : (
-            <div className="bg-yellow-500/20 border border-yellow-500 text-yellow-200 p-3 rounded-lg mt-4 space-y-2">
-              <p className="text-sm">
-                By requesting an artist role, your account will be reviewed.
-              </p>
-              <div className="flex gap-2 mt-2">
-                <Button onClick={() => setShowRequestForm(true)} className="btn-primary">
-                  Continue
-                </Button>
-                <Button variant="secondary" onClick={() => setShowNotice(false)}>
-                  Cancel
-                </Button>
-              </div>
-              {requestSent && (
-  <div className="bg-blue-500/20 border border-blue-500 text-white p-3 rounded-lg mb-4">
-    You have successfully submitted a request. Please wait for admin approval.
-  </div>
-)}
-            </div>
-          )
+    <div className="flex flex-wrap gap-4 mt-4">
+    {user.role !== "artist" && (
+    !showNotice ? (
+      <Button
+        onClick={() => setShowNotice(true)}
+        className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-md transition"
+      >
+      <UserPlus size={18} />
+        Become an Artist
+      </Button>
+       ) : (
+      <div className="bg-yellow-500/20 border border-yellow-500 text-yellow-200 p-3 rounded-lg space-y-2 w-full">
+        <p className="text-sm">
+          By requesting an artist role, your account will be reviewed.
+        </p>
+        <div className="flex gap-2 mt-2">
+          <Button onClick={() => setShowRequestForm(true)} className="btn-primary">
+            Continue
+          </Button>
+          <Button variant="secondary" onClick={() => setShowNotice(false)}>
+            Cancel
+          </Button>
+        </div>
+        {requestSent && (
+          <div className="bg-blue-500/20 border border-blue-500 text-white p-3 rounded-lg mb-4">
+            You have successfully submitted a request. Please wait for admin approval.
+          </div>
         )}
+      </div>
+    )
+    )}
+
+    <Button
+    onClick={() => router.push("/profile/settings")}
+    className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-md transition"
+    >
+    <Settings size={18} />
+    Account Settings
+   </Button>
+    </div>
       </div>
     </div>
   );

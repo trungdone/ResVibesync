@@ -28,96 +28,100 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const verifyToken = async (token) => {
-    try {
-      setLoading(true);
-      const response = await fetch("http://localhost:8000/user/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const text = await response.text();
-
-      if (response.ok) {
-        const userData = JSON.parse(text);
-        setUser(userData);
-        setIsAuthenticated(true);
-          // check role change
-  const previousRole = localStorage.getItem("previousRole")
-  if (previousRole && previousRole !== userData.role) {
-    localStorage.setItem("roleChanged", `Role changed from ${previousRole} to ${userData.role}`)
-  }
-  localStorage.setItem("previousRole", userData.role)
-        return userData;
-      } else {
-        throw new Error("Invalid or expired token");
-      }
-    } catch (err) {
-      console.warn("🔒 Token verification failed:", err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-    
-  };
-
-  const signIn = async (email, password) => {
-    try {
-      setLoading(true);
-      const response = await fetch("http://localhost:8000/user/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ username: email, password }),
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem("token", data.access_token);
-        const userData = await verifyToken(data.access_token);
-        if (userData.banned) {
-          localStorage.removeItem("token");
-          throw new Error("Account is banned");
-        }
-        setUser(userData);
-        setIsAuthenticated(true);
-
-      localStorage.setItem("welcomeNotification", `Welcome back, ${userData.name}! You are logged in as ${userData.role}.`);
-
-      router.push(
-  userData.role === "admin"
-    ? "/admin/dashboard"
-    : userData.role === "artist"
-      ? "/role_artist/dashboard"
-      : "/profile"
-);
-
-        // Push welcome notification to server
+const verifyToken = async (token) => {
   try {
-  const res = await fetch("http://localhost:8000/api/notifications", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${data.access_token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      user_id: userData.id,
-      title: "Welcome",
-      message: `Welcome back, ${userData.name}! You are logged in as ${userData.role}.`,
-      type: "login"
-    })
-  });
-  if (!res.ok) console.error("Notify welcome failed");
-} catch (err) {
-  console.error("Notify welcome failed", err);
-}
-      } else {
-        throw new Error(data.detail || "Invalid credentials");
-      }
-    } catch (err) {
-      console.error("❌ Sign-in error:", err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+    setLoading(true);
+    const response = await fetch("http://localhost:8000/user/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json();
+
+    if (!response.ok) throw new Error("Invalid or expired token");
+
+    setUser(data);
+    setIsAuthenticated(true);
+    return data;
+  } catch (err) {
+    console.warn("🔒 Token verification failed:", err.message);
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
+
+const refreshUser = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const response = await fetch("http://localhost:8000/user/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error("Failed to refresh user");
+
+    setUser(data);
+    setIsAuthenticated(true);
+  } catch (err) {
+    console.error("🔄 Failed to refresh user:", err.message);
+  }
+};
+
+const signIn = async (email, password) => {
+  try {
+    setLoading(true);
+    const response = await fetch("http://localhost:8000/user/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ username: email, password }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Invalid credentials");
+
+    const userData = data.user;
+    if (userData.banned) throw new Error("Account is banned");
+
+    // ✅ Gán trực tiếp user và token
+    localStorage.setItem("token", data.access_token);
+    setUser(userData);
+    setIsAuthenticated(true);
+
+    localStorage.setItem("welcomeNotification", `Welcome back, ${userData.name}! You are logged in as ${userData.role}.`);
+    localStorage.setItem("previousRole", userData.role);
+
+    // 📨 Gửi thông báo login (không block UI)
+    fetch("http://localhost:8000/api/notifications", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${data.access_token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        user_id: userData.id,
+        title: "Welcome",
+        message: `Welcome back, ${userData.name}! You are logged in as ${userData.role}.`,
+        type: "login"
+      })
+    }).catch(console.warn);
+
+    // ✅ Điều hướng mượt mà theo role
+    router.push(
+      userData.role === "admin"
+        ? "/admin/dashboard"
+        : userData.role === "artist"
+          ? "/role_artist/dashboard"
+          : "/"
+    );
+  } catch (err) {
+    console.error("❌ Sign-in error:", err.message);
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const signUp = async (name, email, password) => {
     try {
@@ -150,7 +154,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading,refreshUser, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -26,7 +26,6 @@ export async function getSongById(id) {
   return res.json();
 }
 
-
 export async function createSong(data) {
   const endpoint = "/api/songs";
   return await apiFetch(endpoint, {
@@ -36,15 +35,27 @@ export async function createSong(data) {
   });
 }
 
-// Thêm các phương thức update, delete nếu cần
-
 export async function fetchSongsByArtist(artistId) {
   const endpoint = "/api/songs";
-  return await apiFetch(endpoint, { fallbackOnError: [] })
-    .then(data => {
-      const songs = Array.isArray(data.songs) ? data.songs : (Array.isArray(data) ? data : []);
-      return songs.filter(song => song.artistId === artistId);
-    });
+  const data = await apiFetch(endpoint, { fallbackOnError: { songs: [] } });
+  const songs = Array.isArray(data.songs) ? data.songs : (Array.isArray(data) ? data : []);
+  return {
+    songs: songs.filter(song => String(song.artistId) === String(artistId))
+  };
+}
+
+export async function fetchSongsByArtistWithQuery(artistId) {
+  try {
+    const params = { artistId}; // Thêm giới hạn 10 bài
+    const songs = await fetchSongs(params);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`Received ${songs.length} songs for artist ${artistId}`);
+    }
+    return songs; // Không cần sort hay slice vì server đã lọc và giới hạn
+  } catch (error) {
+    console.error(`Error fetching songs for artist ${artistId}:`, error);
+    return [];
+  }
 }
 
 export async function fetchTopSongs(limit = 10) {
@@ -64,5 +75,23 @@ export async function fetchSongsByKeyword(keyword) {
   } catch (error) {
     console.error(`fetchSongsByKeyword error (${keyword}):`, error);
     return [];
+  }
+}
+
+export async function fetchSongsByGenre(genreName) {
+  try {
+    const query = genreName ? new URLSearchParams({ genre: genreName }).toString() : "";
+    const endpoint = `/api/songs${query ? `?${query}` : ""}`;
+    console.log(`Fetching songs for genre: ${genreName}`);
+    const data = await apiFetch(endpoint, { fallbackOnError: { songs: [], total: 0 } });
+    if (!data || !Array.isArray(data.songs)) {
+      console.error("Invalid response from API:", data);
+      return { songs: [], total: 0 };
+    }
+    console.log(`Received ${data.songs.length} songs`);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching songs by genre (${genreName}):`, error);
+    return { songs: [], total: 0 };
   }
 }

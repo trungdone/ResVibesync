@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home, Search, Library, Music, Heart, ListMusic, PlusCircle, Play
+  Home, Search, Library, Music, Heart, ListMusic, PlusCircle,Compass, Play,Tags
 } from "lucide-react";
 import CustomCreatePlaylistModal from "@/components/playlist/CustomCreatePlaylistModal";
 import { getAllPlaylists } from "@/lib/api/playlists";
@@ -55,15 +55,22 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 hidden md:flex flex-col bg-black/30 h-full overflow-y-auto">
+    <aside className="w-64 hidden md:flex flex-col bg-black/30 h-full overflow-y-auto scroll-container">
       <div className="p-6">
-        <Link href="/" className="flex items-center gap-2 mb-8">
-          <div className="bg-purple-600 w-8 h-8 rounded-full flex items-center justify-center">
-            <Music size={16} className="text-white" />
-          </div>
-          <span className="text-xl font-bold text-white">VibeSync</span>
-        </Link>
-
+    <Link
+     href="/"
+     className="group flex items-center gap-3 mb-8 cursor-pointer"
+     >
+    <div className="bg-gradient-to-br from-purple-600 to-pink-500 w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-active:rotate-180">
+    <Music
+      size={22}
+      className="text-white animate-wobble transition-transform duration-300"
+    />
+    </div>
+     <span className="text-2xl font-bold text-white glow-text">
+      VibeSync
+    </span>
+    </Link>
         <nav className="space-y-1">
           <Link href="/" className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
             isActive("/") ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"
@@ -77,6 +84,24 @@ export default function Sidebar() {
             <Search size={20} />
             <span>Search</span>
           </Link>
+          <Link href="/discovery" className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+          isActive("/discovery") ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"
+          }`}>
+          <Compass size={20} />
+          <span>Discovery</span>
+          </Link>
+            <Link
+          href="/genres"
+          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+          isActive("/genres")
+          ? "bg-white/10 text-white"
+          : "text-gray-400 hover:bg-white/5 hover:text-white"
+          }`}
+          >
+          <Tags size={20} />
+          <span>Topics & Genres</span>
+          </Link>
+
           <Link href="/library" className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
             isActive("/library") ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"
           }`}>
@@ -114,7 +139,7 @@ export default function Sidebar() {
 
           <div className="space-y-1">
             <Link
-              href="/playlist/liked"
+              href="/liked"
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-white/5 text-gray-400 hover:text-white"
             >
               <div className="w-6 h-6 flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-400 rounded-sm">

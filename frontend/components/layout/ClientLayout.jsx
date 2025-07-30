@@ -8,45 +8,57 @@ import Header from "@/components/layout/header";
 import { MusicProvider } from "@/context/music-context";
 import { useAuth } from "@/context/auth-context";
 import { NotificationProvider } from "@/context/notification-context";
+import Footer from "@/components/layout/Footer";
 
 export default function ClientLayout({ children }) {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [shouldRender, setShouldRender] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (loading) return;
 
-    // Redirect unauthenticated
-    if (!isAuthenticated && pathname !== "/signin" && pathname !== "/signup") {
+    // ⛔ Redirect nếu chưa đăng nhập
+    if (!isAuthenticated && !["/signin", "/signup"].includes(pathname)) {
       router.push("/signin");
       return;
     }
 
-    // Redirect if role mismatch
+    // ✅ Xử lý role-based redirect (nếu cần)
     if (user) {
-      if (user.role === "admin" && !pathname.startsWith("/admin")) {
+      const isAdminPage = pathname.startsWith("/admin");
+      const isArtistPage = pathname.startsWith("/role_artist");
+      const isAllowedArtistPage = isArtistPage || pathname.startsWith("/song/");
+
+      if (user.role === "admin" && !isAdminPage) {
         router.push("/admin/dashboard");
         return;
-      } else if (user.role === "artist" && !pathname.startsWith("/role_artist")) {
-        router.push("/role_artist/dashboard");
-        return;
-      } else if (user.role !== "admin" && pathname.startsWith("/admin")) {
-        router.push("/profile");
+      } else if (user.role === "artist" && !isAllowedArtistPage) {
+       router.push("/role_artist/dashboard");
+       return;
+      } else if (user.role !== "admin" && isAdminPage) {
+        router.push("/");
         return;
       }
     }
 
-    // If passed all guards
-    setShouldRender(true);
+    // ✅ Nếu hợp lệ
+    setReady(true);
   }, [user, isAuthenticated, loading, pathname, router]);
 
-  if (loading || !shouldRender) {
-    return <div className="flex items-center justify-center min-h-screen text-white">Loading...</div>;
+  if (loading || !ready) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-white">
+        <div className="text-center">
+          <p className="text-xl font-semibold">Loading your dashboard...</p>
+          <p className="text-gray-400 text-sm mt-2">Please wait while we fetch your data.</p>
+        </div>
+      </div>
+    );
   }
 
-  // ROLE-BASED LAYOUT
+  // 🎵 ARTIST LAYOUT
   if (pathname.startsWith("/role_artist")) {
     return (
       <NotificationProvider>
@@ -55,6 +67,7 @@ export default function ClientLayout({ children }) {
     );
   }
 
+  // 🛠️ ADMIN LAYOUT
   if (pathname.startsWith("/admin")) {
     return (
       <NotificationProvider>
@@ -63,7 +76,7 @@ export default function ClientLayout({ children }) {
     );
   }
 
-  // DEFAULT LAYOUT FOR NORMAL USER
+  // 👤 DEFAULT USER LAYOUT
   return (
     <NotificationProvider>
       <MusicProvider>
@@ -71,7 +84,9 @@ export default function ClientLayout({ children }) {
           <Header />
           <div className="flex flex-1 overflow-hidden">
             <Sidebar />
-            <main className="flex-1 overflow-y-auto p-4">{children}</main>
+            <main className="flex-1 overflow-y-auto p-4">{children}
+            <Footer />
+            </main>
           </div>
           <Player />
         </div>

@@ -4,11 +4,17 @@ import { useState,useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Bell, ChevronDown } from "lucide-react";
+import { Search, Bell, ChevronDown,Compass, Settings, Users } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useMusic } from "@/context/music-context";
 import NotificationPopover from "@/components/notifications/notification-popover";
 import { useNotifications } from "@/context/notification-context";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 export default function Header() {
   const router = useRouter();
@@ -55,20 +61,99 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/50 backdrop-blur-md">
-      {/* -------- Search Box -------- */}
-      <div className="relative w-full max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input
-          type="text"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="Search for songs, artists, or playlists..."
-          className="w-full bg-white/10 border border-white/10 rounded-full pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
-        />
-      </div>
+   {/* -------- Search Box -------- */}
+   <div className="relative w-full max-w-md flex items-center gap-2">
+  <div className="relative flex-1">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+    <input
+      type="text"
+      value={keyword}
+      onChange={(e) => setKeyword(e.target.value)}
+      placeholder="Search for songs, artists, or playlists..."
+      className="w-full bg-white/10 border border-white/10 rounded-full pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
+    />
+  </div>
+
+  {/* ✅ Bọc riêng TooltipProvider cho Browse Icon */}
+  <TooltipProvider>
+    <Tooltip>
+    <TooltipTrigger asChild>
+  <Link
+   href="/browse"
+   className={`w-9 h-9 flex items-center justify-center rounded-full transition ${
+    pathname === "/browse"
+      ? "bg-purple-600 text-white"
+      : "bg-white/10 hover:bg-white/20"
+   }`}
+   >
+   <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className="w-6 h-6"
+   >
+    <path d="M5 4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H5zm0 6a1 1 0 0 0-1 1v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a1 1 0 0 0-1-1H5zm7 3c.828 0 1.5.672 1.5 1.5S12.828 16 12 16s-1.5-.672-1.5-1.5S11.172 13 12 13z" />
+   </svg>
+   </Link>
+    </TooltipTrigger>
+    <TooltipContent>
+      <p>Browse</p>
+    </TooltipContent>
+    </Tooltip>
+   </TooltipProvider>
+     </div>
 
       {/* -------- Right Controls -------- */}
       <div className="flex items-center gap-4 ml-4">
+        <TooltipProvider>
+      {/* --- Explore Premium Button --- */}
+      <Tooltip>
+      <TooltipTrigger asChild>
+   <Link
+  href="/premium"
+  className={`relative px-4 py-3 text-sm font-semibold rounded-full transition duration-500 ease-in-out overflow-hidden
+    ${pathname === "/premium" 
+      ? "bg-purple-600 text-white"
+      : "bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 text-white shadow-lg hover:scale-105 hover:shadow-xl slow-pulse"
+    }`}
+   >
+  <span className="relative z-10">Explore Premium</span>
+  {pathname !== "/premium" && (
+    <span className="absolute inset-0 bg-white opacity-10 rounded-full blur-md slow-ping" />
+  )}
+  </Link>
+     </TooltipTrigger>
+    <TooltipContent>
+      <p>Check out Premium features</p>
+    </TooltipContent>
+    </Tooltip>
+
+  <Tooltip>
+  <TooltipTrigger asChild>
+    <button className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition">
+      <Users size={18} className="text-white" />
+    </button>
+  </TooltipTrigger>
+  <TooltipContent>
+    <p>Friends</p>
+  </TooltipContent>
+  </Tooltip>
+
+  {/* --- Settings icon --- */}
+   <Tooltip>
+    <TooltipTrigger asChild>
+      <Link href="/settings">
+        <div className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition">
+          <Settings size={18} className="text-white" />
+        </div>
+      </Link>
+    </TooltipTrigger>
+    <TooltipContent>
+      <p>Settings</p>
+    </TooltipContent>
+     </Tooltip>
+     </TooltipProvider>
+
         {isAuthenticated ? (
           <>
             {/* --- Notifications --- */}
@@ -115,11 +200,11 @@ export default function Header() {
                     Profile
                   </Link>
                   <Link
-                    href="/settings"
+                    href="/profile/settings"
                     className="block px-4 py-2 text-sm hover:bg-white/10"
                     onClick={() => setShowDropdown(false)}
                   >
-                    Settings
+                    Account Settings
                   </Link>
                   <button
                     onClick={() => {

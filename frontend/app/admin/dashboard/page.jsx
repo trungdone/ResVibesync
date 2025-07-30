@@ -22,7 +22,7 @@ export default function AdminDashboard() {
     albums: 0,
     artists: 0,
     song_likes: 0,
-    followers: 0,
+    followers: 0, // Sẽ được lấy từ /api/admin/follow/total-followers
     comments: 0,
     reports: 0,
   });
@@ -45,14 +45,14 @@ export default function AdminDashboard() {
         if (!token) throw new Error("No authentication token found");
 
         // Gọi API để lấy dữ liệu chi tiết
-        const [songsResponse, albumsResponse, artistsResponse, usersResponse, dashboardResponse] = await Promise.all([
+        const [songsResponse, albumsResponse, artistsResponse, usersResponse, followersResponse] = await Promise.all([
           fetchSongs(),
           fetchAlbums(),
           fetchArtists(),
           fetch("http://localhost:8000/user/users", {
             headers: { Authorization: `Bearer ${token}` },
           }).then(res => res.json()),
-          fetch("http://localhost:8000/admin/dashboard", {
+          fetch("http://localhost:8000/api/admin/follow/total-followers", { // Thay đổi endpoint
             headers: { Authorization: `Bearer ${token}` },
           }).then(res => res.json()),
         ]);
@@ -61,18 +61,18 @@ export default function AdminDashboard() {
         console.log("Albums response:", albumsResponse);
         console.log("Artists response:", artistsResponse);
         console.log("Users response:", usersResponse);
-        console.log("Dashboard stats:", dashboardResponse);
+        console.log("Followers response:", followersResponse);
 
         setStats({
           users: Array.isArray(usersResponse) ? usersResponse.length : usersResponse?.users?.length || 0,
           songs: Array.isArray(songsResponse) ? songsResponse.length : songsResponse?.songs?.length || 0,
-          playlists: dashboardResponse.playlists || 0,
+          playlists: 0, // Cần thêm endpoint hoặc logic để lấy playlists
           albums: Array.isArray(albumsResponse) ? albumsResponse.length : albumsResponse?.albums?.length || 0,
           artists: Array.isArray(artistsResponse) ? artistsResponse.length : artistsResponse?.artists?.length || 0,
-          song_likes: dashboardResponse.song_likes || 0,
-          followers: dashboardResponse.followers || 0,
-          comments: dashboardResponse.comments || 0,
-          reports: dashboardResponse.reports || 0,
+          song_likes: 0, // Cần thêm endpoint để lấy song_likes
+          followers: followersResponse.totalFollowers || 0, // Lấy từ endpoint /api/admin/follow/total-followers
+          comments: 0, // Cần thêm endpoint để lấy comments
+          reports: 0, // Cần thêm endpoint để lấy reports
         });
       } catch (err) {
         console.error("Fetch data error:", err.message);
@@ -94,6 +94,7 @@ export default function AdminDashboard() {
     { name: "Songs", value: stats.songs, fill: "#34d399" },
     { name: "Albums", value: stats.albums, fill: "#6ee7b7" },
     { name: "Artists", value: stats.artists, fill: "#a7f3d0" },
+    { name: "Followers", value: stats.followers, fill: "#6b7280" }, // Thêm Followers vào biểu đồ
   ];
 
   if (loading) {
@@ -203,7 +204,7 @@ export default function AdminDashboard() {
       >
         {[
           { title: "Total Song Likes", value: stats.song_likes, icon: Heart },
-          { title: "Total Followers", value: stats.followers, icon: UsersIcon },
+          { title: "Total Followers", value: stats.followers, icon: UsersIcon, link: "/admin/follow" }, // Thêm link để xem chi tiết
           { title: "Total Comments", value: stats.comments, icon: MessageCircle },
           { title: "Total Reports", value: stats.reports, icon: Flag },
           { title: "Total Playlists", value: stats.playlists, icon: Disc },
@@ -215,9 +216,22 @@ export default function AdminDashboard() {
             transition={{ duration: 0.5, delay: 0.9 + index * 0.1 }}
           >
             <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-green-500/30 shadow-lg rounded-xl hover:shadow-2xl transition-all duration-300">
-              <CardHeader className="flex items-center">
-                <item.icon className="text-green-400 mr-3 h-6 w-6" />
-                <CardTitle className="text-lg font-semibold text-gray-200">{item.title}</CardTitle>
+              <CardHeader className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <item.icon className="text-green-400 mr-3 h-6 w-6" />
+                  <CardTitle className="text-lg font-semibold text-gray-200">{item.title}</CardTitle>
+                </div>
+                {item.link && (
+                  <Link href={item.link}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-green-400 hover:text-green-300 hover:bg-green-500/20"
+                    >
+                      View
+                    </Button>
+                  </Link>
+                )}
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold text-white">{item.value.toLocaleString()}</p>

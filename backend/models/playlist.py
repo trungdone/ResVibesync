@@ -25,6 +25,7 @@ class PlaylistUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     songIds: Optional[List[str]] = None
+    isPublic: Optional[bool] = None
     coverArt: Optional[str] = None
 
 class PlaylistInDB(PlaylistBase):
@@ -38,3 +39,20 @@ class PlaylistInDB(PlaylistBase):
 
 class PlaylistCreate(PlaylistBase):
     pass
+
+
+class PlaylistOut(BaseModel):
+    id: str
+    title: str
+    description: Optional[str]
+    creator: str
+    songIds: Optional[List[str]]
+    coverArt: Optional[str]
+    isPublic: Optional[bool]
+    isShuffle: Optional[bool]
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+        json_encoders = {ObjectId: str}

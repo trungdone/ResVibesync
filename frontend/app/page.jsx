@@ -4,7 +4,10 @@ import RecommendedPlaylists from "@/components/playlist/recommended-playlists";
 import TopArtists from "@/components/home/top-artists";
 import RecommendSection from "@/components/home/recommend-section";
 import ListeningHistory from "@/components/home/ListeningHistory";
+import ChatBoxLauncher from "@/components/chatbot/ChatBoxLauncher";
 import HotAlbums from "@/components/home/hot-albums";
+import ArtistFanSection from "@/components/home/ArtistFanSection/ArtistFanSection";
+import TopListenStats from "@/components/home/TopListenStats";
 
 export default function Home() {
   return (
@@ -13,6 +16,9 @@ export default function Home() {
       <RecommendedPlaylists />
       <RecommendSection />
       <NewReleases />
+      <TopListenStats />
+      <ArtistFanSection/>
+      <ChatBoxLauncher />      
       <TopArtists />
       <HotAlbums />
       <ListeningHistory />

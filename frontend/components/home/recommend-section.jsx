@@ -3,6 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Play, Heart } from "lucide-react";
+import WaveBars from "@/components/ui/WaveBars";
+import { useMusic } from "@/context/music-context";
 
 const fetchRecommendations = async (userId, limit = 12) => {
   try {
@@ -20,9 +23,19 @@ const fetchRecommendations = async (userId, limit = 12) => {
 };
 
 export default function RecommendSection() {
-  const [songs, setSongs] = useState([]);
+  const [songs, setSongsData] = useState([]);
+  const [likedSongs, setLikedSongs] = useState([]);
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const {
+    currentSong,
+    isPlaying,
+    setSongs,
+    playSong,
+    setContext,
+    setContextId,
+  } = useMusic();
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("user_id");
@@ -34,7 +47,7 @@ export default function RecommendSection() {
 
     setUserId(storedUserId);
     fetchRecommendations(storedUserId, 12)
-      .then(setSongs)
+      .then(setSongsData)
       .finally(() => setLoading(false));
   }, []);
 
@@ -67,22 +80,97 @@ export default function RecommendSection() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {songs.map((song) => (
-          <Link key={song.id} href={`/song/${song.id}`} className="group">
-            <div className="relative aspect-square rounded-lg overflow-hidden mb-3 bg-gray-800">
-              <Image
-                src={song.cover_art || "/placeholder.svg"}
-                alt={song.title || "Recommended song"}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            </div>
-            <h3 className="text-sm font-medium text-center text-white truncate">
-              {song.title}
-            </h3>
-            <p className="text-xs text-gray-400 text-center">{song.artist}</p>
-          </Link>
-        ))}
+        {songs.map((song) => {
+          const enrichedSong = {
+            ...song,
+            id: song.id || song._id || song.song_id,
+            audioUrl: song.audio_url || song.audioUrl,
+            coverArt: song.cover_art || song.coverArt || "/placeholder.svg",
+          };
+
+          const isLiked = likedSongs.includes(enrichedSong.id);
+          const isThisSongPlaying =
+            isPlaying && currentSong?.id === enrichedSong.id;
+
+          const toggleLike = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setLikedSongs((prev) =>
+              prev.includes(enrichedSong.id)
+                ? prev.filter((id) => id !== enrichedSong.id)
+                : [...prev, enrichedSong.id]
+            );
+          };
+
+          const handlePlay = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const enrichedSongs = songs.map((s) => ({
+              ...s,
+              id: s.id || s._id || s.song_id,
+              audioUrl: s.audio_url || s.audioUrl,
+              coverArt: s.cover_art || s.coverArt || "/placeholder.svg",
+              artist_id: s.artist_id || song.artist_id,
+            }));
+
+            setSongs(enrichedSongs);
+            setContext("recommendation");
+            setContextId(null);
+            playSong(enrichedSong);
+          };
+
+          return (
+            <Link
+              key={enrichedSong.id}
+              href={`/song/${enrichedSong.id}`}
+              className="group relative"
+            >
+              {/* Cover */}
+              <div className="relative aspect-square rounded-lg overflow-hidden mb-3 bg-gray-800">
+                <Image
+                  src={enrichedSong.coverArt}
+                  alt={enrichedSong.title || "Recommended song"}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+
+                {/* Overlay Buttons */}
+                <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <button
+                    onClick={toggleLike}
+                    className="bg-black/70 hover:bg-black text-white rounded-full p-2"
+                  >
+                    <Heart
+                      className={`w-5 h-5 ${
+                        isLiked ? "fill-red-500 text-red-500" : ""
+                      }`}
+                    />
+                  </button>
+
+                  <button
+                    onClick={handlePlay}
+                    className="bg-purple-600 hover:bg-purple-500 text-white rounded-full p-2"
+                  >
+                    {isThisSongPlaying ? (
+                      <WaveBars />
+                    ) : (
+                      <Play className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Info */}
+              <h3 className="text-sm font-medium text-center text-white truncate">
+                {enrichedSong.title}
+              </h3>
+              <p className="text-xs text-gray-400 text-center">
+                {enrichedSong.artist}
+              </p>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

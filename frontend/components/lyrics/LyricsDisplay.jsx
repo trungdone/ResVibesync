@@ -41,9 +41,12 @@ export default function LyricsDisplay({ lrc, songId }) {
   }, [currentIndex]);
 
   return (
-    <div
-      ref={containerRef}
-      className="scroll-container relative h-32 overflow-y-auto rounded-xl bg-gradient-to-br from-white/10 to-white/5 p-4 shadow-lg backdrop-blur-md custom-scroll transition-all duration-300"
+   <div
+   ref={containerRef}
+   className="scroll-container relative h-32 overflow-y-auto rounded-xl p-4 border border-purple-700/30 shadow-[0_0_20px_#a855f7] custom-scroll transition-all duration-300"
+   style={{
+    background: `linear-gradient(to bottom, #3b0a4d, #2e063b, #240632, #1d052a)`,
+    }}
     >
       <div className="flex flex-col space-y-1">
         {lines.map((line, idx) => {

@@ -53,35 +53,6 @@ export function ArtistForm({ artist, onSubmit, onCancel }) {
     }
   }, [artist, reset]);
 
-    // restore draft if exists
-  useEffect(() => {
-    const draft = localStorage.getItem("artistFormDraft");
-    if (draft) {
-      try {
-        const parsedDraft = JSON.parse(draft);
-        reset(parsedDraft);
-        setGenres(parsedDraft.genres || []);
-        setPreview(parsedDraft.image || null);
-      } catch (err) {
-        console.error("Failed to parse artist draft", err);
-      }
-    }
-  }, [reset]);
-
-  // auto-save draft on form changes
-  useEffect(() => {
-    const subscription = watch((value) => {
-      localStorage.setItem(
-        "artistFormDraft",
-        JSON.stringify({
-          ...value,
-          genres,
-        })
-      );
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, genres]);
-
   const { getRootProps, getInputProps } = useDropzone({
     accept: { "image/*": [] },
     onDrop: async (acceptedFiles) => {
@@ -133,9 +104,6 @@ export function ArtistForm({ artist, onSubmit, onCancel }) {
       return;
     }
     onSubmit({ ...data, genres }).then(() => {
-      localStorage.removeItem("artistFormDraft");
-    reset({name: "", bio: "", image: "",genres: [], followers: 0,
-    }); setGenres([]); setPreview(null);
       toast({
         title: "Success",
         description: "Artist created successfully!",
@@ -290,10 +258,7 @@ export function ArtistForm({ artist, onSubmit, onCancel }) {
           </Tabs>
 
           <div className="flex justify-end gap-3 pt-6 border-t border-border">
-            <Button type="button" variant="outline" onClick={() => {
-            
-            onCancel();
-           }}>
+            <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
             <Button

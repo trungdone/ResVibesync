@@ -32,6 +32,7 @@ class AdminSongService:
                 coverArt=song.get("coverArt", None),
                 audioUrl=song.get("audioUrl", None),
                 artistId=str(song.get("artistId", "")),
+                lyrics_lrc=song.get("lyrics_lrc"),
                 created_at=song["created_at"]
             )
         except Exception as e:
@@ -58,13 +59,11 @@ class AdminSongService:
                     {"artist": {"$regex": search, "$options": "i"}},
                     {"genre": {"$regex": search, "$options": "i"}}
                 ]
-            print(f"Querying songs with query={query}, sort={sort}, skip={skip}, limit={limit}")
             songs = self.song_repository.find_all(sort, limit, skip, query)
             total = songs_collection.count_documents(query) if search else songs_collection.count_documents({})
-            print(f"Fetched {len(songs)} songs, total count: {total}")
             return [self._map_to_song_in_db(song) for song in songs], total
         except Exception as e:
-            print(f"Error fetching songs: {str(e)}")
+
             raise ValueError(f"Failed to fetch songs: {str(e)}")
 
     def get_song_by_id(self, song_id: str) -> Optional[SongInDB]:
@@ -75,7 +74,7 @@ class AdminSongService:
                 return None
             return self._map_to_song_in_db(song)
         except Exception as e:
-            print(f"Error fetching song {song_id}: {str(e)}")
+
             raise ValueError(f"Failed to fetch song: {str(e)}")
 
     def create_song(self, song_data: SongCreate) -> str:
@@ -83,16 +82,20 @@ class AdminSongService:
             audioUrl = str(song_data.audioUrl) if song_data.audioUrl else None
             coverArt = str(song_data.coverArt) if song_data.coverArt else None
 
-            if not artists_collection.find_one({"_id": ObjectId(song_data.artistId)}):
+            # ✅ Validate and get artist name
+            artist_doc = artists_collection.find_one({"_id": ObjectId(song_data.artistId)})
+            if not artist_doc:
                 raise ValueError(f"Artist with ID {song_data.artistId} does not exist")
-            
+            artist_name = artist_doc.get("name", "")
+
             if audioUrl and not self._is_url_accessible(audioUrl):
                 raise ValueError("Invalid or inaccessible audio URL")
             if coverArt and not self._is_url_accessible(coverArt):
                 raise ValueError("Invalid or inaccessible cover art URL")
-            
+
             new_song = song_data.dict(exclude_unset=True)
             new_song["created_at"] = datetime.utcnow()
+            new_song["artist"] = artist_name  # ✅ Add artist name
 
             if new_song.get("coverArt"):
                 new_song["coverArt"] = str(new_song["coverArt"])
@@ -100,7 +103,7 @@ class AdminSongService:
                 new_song["audioUrl"] = str(new_song["audioUrl"])
 
             song_id = self.song_repository.insert(new_song)
-            
+
             if song_data.album:
                 from database.repositories.album_repository import AlbumRepository
                 album_repo = AlbumRepository()
@@ -120,35 +123,30 @@ class AdminSongService:
         try:
             update_data = song_data.dict(exclude_unset=True)
 
-            # validate artist
+            # ✅ Validate and set artist name if artistId is updated
             if "artistId" in update_data:
-                if not artists_collection.find_one({"_id": ObjectId(update_data["artistId"])}):
+                artist_doc = artists_collection.find_one({"_id": ObjectId(update_data["artistId"])})
+                if not artist_doc:
                     raise ValueError(f"Artist with ID {update_data['artistId']} does not exist")
+                update_data["artist"] = artist_doc.get("name", "")  # ✅ Update artist name
 
-            # validate + ép kiểu coverArt
             if "coverArt" in update_data and update_data["coverArt"]:
                 if not self._is_url_accessible(str(update_data["coverArt"])):
                     raise ValueError("Invalid or inaccessible cover art URL")
                 update_data["coverArt"] = str(update_data["coverArt"])
 
-            # validate + ép kiểu audioUrl
             if "audioUrl" in update_data and update_data["audioUrl"]:
                 if not self._is_url_accessible(str(update_data["audioUrl"])):
                     raise ValueError("Invalid or inaccessible audio URL")
                 update_data["audioUrl"] = str(update_data["audioUrl"])
 
-            # cập nhật updated_at
             update_data["updated_at"] = datetime.utcnow()
-
-            # update DB
             result = self.song_repository.update(song_id, update_data)
 
-            # handle album update nếu có
             if "album" in update_data:
                 from database.repositories.album_repository import AlbumRepository
                 album_repo = AlbumRepository()
 
-                # tìm album cũ
                 old_song = self.song_repository.find_by_id(song_id)
                 if old_song and old_song.get("album"):
                     old_album_doc = album_repo.find_by_title(old_song["album"])
@@ -156,7 +154,6 @@ class AdminSongService:
                         old_album_id = old_album_doc[0]["_id"]
                         AlbumRepository.remove_song_from_album(str(old_album_id), song_id)
 
-                # thêm vào album mới
                 new_album_doc = album_repo.find_by_title(update_data["album"])
                 if not new_album_doc:
                     raise ValueError(f"Album with title {update_data['album']} not found")

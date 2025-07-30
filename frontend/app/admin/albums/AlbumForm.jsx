@@ -404,6 +404,19 @@ useEffect(() => {
                     }}
                     className="mt-1 text-foreground bg-gray-800 border-gray-700 focus:ring-green-500 focus:border-green-500 rounded-md p-2"
                   />
+                  {/* Nút mở folder coverArt */}
+                  <button
+                  type="button"
+                  onClick={() =>
+                  window.open(
+                  "https://console.cloudinary.com/app/c-b0dc706a40de477a78984f32205e70/assets/media_library/folders/home?view_mode=mosaic",
+                  "_blank"
+                   )
+                  }
+                  className="mt-2 inline-flex items-center text-sm text-blue-400 hover:text-blue-300"
+                  >
+                 🖼️ Browse Cloudinary CoverArt Folder
+                </button>                  
                 </div>
                 {(preview || imageValue) && (
                   <div className="relative mt-3 w-fit">

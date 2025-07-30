@@ -7,6 +7,7 @@ from database.repositories.song_repository import SongRepository
 from database.repositories.artist_repository import ArtistRepository
 from urllib.request import urlopen
 from urllib.error import HTTPError
+from random import shuffle
 
 class SongService:
     def __init__(self, song_repository: SongRepository, artist_repository: ArtistRepository):
@@ -82,4 +83,34 @@ class SongService:
 
     def delete_song(self, song_id: str) -> bool:
         return self.song_repository.delete(song_id)
+
+    def get_random_songs(self, limit: int = 10, region: Optional[str] = None) -> List[SongInDB]:
+        raw_songs = self.song_repository.get_random_songs(limit=limit * 3)
+
+        if region:
+            region_keyword = "vietnamese" if region.lower() == "vietnamese" else "international"
+            if region_keyword == "vietnamese":
+                raw_songs = [
+                    s for s in raw_songs if any("vietnamese" in g.lower() for g in s.get("genre", []))
+                ]
+            else:
+                raw_songs = [
+                    s for s in raw_songs if not any("vietnamese" in g.lower() for g in s.get("genre", []))
+                ]
+
+        shuffle(raw_songs)
+        return [self._map_to_song_in_db(song) for song in raw_songs[:limit]]    
+    
+    def get_songs_by_region(
+        self,
+        region: str,
+        limit: Optional[int] = 12,
+        refresh: bool = False
+    ) -> List[SongInDB]:
+        raw_songs = self.song_repository.get_random_songs_by_region(region, limit=limit)
+        return [self._map_to_song_in_db(song) for song in raw_songs]
+
+    def get_random_songs_by_region(self, region: Optional[str], limit: int = 12) -> List[SongInDB]:
+        raw_songs = self.song_repository.get_random_songs_by_region(region=region, limit=limit)
+        return [self._map_to_song_in_db(song) for song in raw_songs]    
     

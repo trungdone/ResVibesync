@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 import { toggleLikeSong } from "@/lib/api/user";
+import { recordFullListen } from "@/lib/api/listen";
+import { useAuth } from "@/context/auth-context";
 
 export default function Player() {
   const {
@@ -25,6 +27,7 @@ export default function Player() {
   toggleRepeat,
   } = useMusic();
 
+  const { user } = useAuth();
   const [volume, setVolume] = useState(50);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -38,10 +41,25 @@ export default function Player() {
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const isLiked = currentSong?.id && likedSongs.has(currentSong.id);
+  const [hasCountedListen, setHasCountedListen] = useState(false);
 
   useEffect(() => {
   console.log("🔁 Audio src updated:", currentSong?.audioUrl);
 }, [currentSong]);
+
+  // Fetch history
+  useEffect(() => {
+    if (currentSong && user?.id && currentSong.id) {
+      fetch("http://localhost:8000/api/history/listen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user.id,
+          song_id: currentSong.id,
+        }),
+      }).catch((err) => console.error("❌ History Error:", err));
+    }
+  }, [currentSong]);
 
   useEffect(() => {
   const handleClickOutside = (event) => {
@@ -87,13 +105,35 @@ export default function Player() {
     }
   }, [volume]);
 
-  const handleTimeUpdate = () => {
-    const audio = audioRef.current;
-    if (audio) {
-      setCurrentTime(audio.currentTime);
-      setDuration(audio.duration || 0);
+const handleTimeUpdate = () => {
+  const audio = audioRef.current;
+  if (audio) {
+    setCurrentTime(audio.currentTime);
+    setDuration(audio.duration || 0);
+
+    if (
+      !hasCountedListen &&
+      audio.currentTime >= 120 &&
+      currentSong &&
+      user?.id
+    ) {
+      setHasCountedListen(true);
+
+      recordFullListen(user.id, currentSong.id, new Date().toISOString())
+        .then(() => {
+          console.log("✅ Full listen recorded");
+        })
+        .catch((err) => {
+          console.error("❌ Failed to record full listen:", err);
+        });
     }
-  };
+  }
+};
+
+
+useEffect(() => {
+  setHasCountedListen(false);
+}, [currentSong]);
   
 
 const handleProgressChange = (e) => {
@@ -162,6 +202,7 @@ const handleProgressChange = (e) => {
     if (repeatMode === 1) {
       audioRef.current.currentTime = 0;
       audioRef.current.play(); // 🛠 Lặp lại bài
+      setHasCountedListen(false);
     } else {
       nextSong(); // 🛠 Gọi nextSong nếu không phải repeat one
     }

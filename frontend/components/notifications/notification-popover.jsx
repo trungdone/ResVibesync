@@ -47,7 +47,7 @@ const handleDelete = async (id) => {
       <div className="p-2 border-b border-gray-700 text-gray-300 font-bold">
         Notifications
       </div>
-<ul className="divide-y divide-gray-700 max-h-80 overflow-y-auto">
+<ul className="divide-y divide-gray-700 max-h-80 overflow-y-auto scroll-container">
   {notifications.length === 0 && (
     <li className="p-3 text-sm text-gray-400">No notifications</li>
   )}
@@ -97,8 +97,8 @@ const handleDelete = async (id) => {
         </button>
       </div>
     </li>
-  ))}
-</ul>
+    ))}
+    </ul>
       <button
         className="w-full p-2 text-xs text-center text-purple-400 hover:bg-gray-800"
         onClick={onClose}

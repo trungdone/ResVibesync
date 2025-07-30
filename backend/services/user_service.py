@@ -170,3 +170,44 @@ class UserService:
             raise HTTPException(status_code=500, detail="Failed to update liked songs")
 
         return list(liked)
+
+    @staticmethod
+    def update_password(user_id: str, hashed_password: str):
+        success = UserRepository.update(user_id, {"hashed_password": hashed_password})
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update password")
+        
+
+# ...existing code...
+    @staticmethod
+    def update_user_with_dict(user_id: str, data: dict):
+        if hasattr(data, "dict"):
+            update_data = data.dict(exclude_unset=True)
+        else:
+            update_data = data  # Assume it's already a dict
+
+        success = UserRepository.update(user_id, update_data)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update user")
+        return success
+# ...existing code...
+
+
+    @staticmethod
+    def update_user_name(user_id: str, new_name: str) -> UserInDB:
+        if not new_name or not new_name.strip():
+            raise HTTPException(status_code=400, detail="Name cannot be empty")
+
+        success = UserRepository.update(user_id, {
+            "name": new_name.strip(),
+            "updated_at": datetime.utcnow()
+        })
+
+        if not success:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        updated_user = UserService.get_user_by_id(user_id)
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="User not found after update")
+
+        return updated_user

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { recordFullListen } from "@/lib/api/listen";
 
 const MusicContext = createContext();
 
@@ -138,6 +139,35 @@ export function MusicProvider({ children }) {
     audio.addEventListener("ended", handleEnded);
     return () => audio.removeEventListener("ended", handleEnded);
   }, [currentSong, repeatMode, songs, isShuffling]);
+
+  useEffect(() => {
+  const audio = audioRef.current;
+  if (!audio || !currentSong) return;
+
+  let hasLogged = false;
+
+  const handleTimeUpdate = () => {
+    if (hasLogged || audio.currentTime < 120) return;
+    hasLogged = true;
+
+    const userId = localStorage.getItem("userId");
+    if (!userId || !currentSong?.id) return;
+
+    recordFullListen(userId, currentSong.id, new Date().toISOString())
+      .then(() => {
+        console.log("✅ Đã ghi nhận lượt nghe ≥ 2 phút");
+        // 📌 Gọi callback nếu được gán
+        if (typeof window.__onListenRecorded === "function") {
+          window.__onListenRecorded();
+        }
+      })
+      .catch(err => console.error("❌ Ghi nhận lượt nghe thất bại:", err));
+  };
+
+  audio.addEventListener("timeupdate", handleTimeUpdate);
+  return () => audio.removeEventListener("timeupdate", handleTimeUpdate);
+}, [currentSong]);
+
 
   return (
     <MusicContext.Provider value={{

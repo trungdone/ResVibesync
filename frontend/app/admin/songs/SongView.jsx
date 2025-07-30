@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,57 +7,65 @@ import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchAlbumsIncludingSong } from "@/lib/api/albums";
 import { fetchArtistById } from "@/lib/api/artists";
+import { fetchSongsByArtist } from "@/lib/api/songs";
 
 export default function SongView({ song, onClose }) {
   const { toast } = useToast();
   const [albums, setAlbums] = useState([]);
   const [artist, setArtist] = useState(null);
+  const [allSongs, setAllSongs] = useState([]); 
 
-useEffect(() => {
-  async function loadData() {
-    try {
-      if (song?.artistId) {
-        const artistData = await fetchArtistById(song.artistId);
-        setArtist(artistData);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        if (song?.artistId) {
+          const artistData = await fetchArtistById(song.artistId);
+          setArtist(artistData);
+        }
+
+        if (song?.id) {
+          const albumsData = await fetchAlbumsIncludingSong(song.id);
+
+          // fetch thêm nghệ sĩ của từng album
+          const artistIds = [...new Set(albumsData.map((a) => a.artist_id).filter(Boolean))];
+          const artistMap = {};
+          await Promise.all(
+            artistIds.map(async (aid) => {
+              const a = await fetchArtistById(aid);
+              artistMap[aid] = a?.name || "Unknown Artist";
+            })
+          );
+
+          // FIX: lọc album có cùng artist_id với bài hát
+          const filteredAlbums = albumsData.filter(
+            (album) => album.artist_id === song.artistId
+          );
+
+          const albumsWithArtist = filteredAlbums.map((album) => ({
+            ...album,
+            artistName: artistMap[album.artist_id] || "Unknown Artist",
+          }));
+
+          setAlbums(albumsWithArtist);
+        }
+
+        // Fetch all songs by artist
+        if (song?.artistId) {
+          const { songs: songsData } = await fetchSongsByArtist(song.artistId);
+          console.log("All songs by artist response:", songsData);
+          setAllSongs(songsData);
+        }
+      } catch (err) {
+        console.error("Error loading data:", err);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load song details",
+        });
       }
-
-      if (song?.id) {
-        const albumsData = await fetchAlbumsIncludingSong(song.id);
-
-        // fetch thêm nghệ sĩ của từng album
-        const artistIds = [...new Set(albumsData.map((a) => a.artist_id).filter(Boolean))];
-        const artistMap = {};
-        await Promise.all(
-          artistIds.map(async (aid) => {
-            const a = await fetchArtistById(aid);
-            artistMap[aid] = a?.name || "Unknown Artist";
-          })
-        );
-
-        // FIX: lọc album có cùng artist_id với bài hát
-        const filteredAlbums = albumsData.filter(
-          (album) => album.artist_id === song.artistId
-        );
-
-        const albumsWithArtist = filteredAlbums.map((album) => ({
-          ...album,
-          artistName: artistMap[album.artist_id] || "Unknown Artist",
-        }));
-
-        setAlbums(albumsWithArtist);
-      }
-    } catch (err) {
-      console.error("Error loading data:", err);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load song details",
-      });
     }
-  }
-  loadData();
-}, [song, toast]);
-
+    loadData();
+  }, [song, toast]);
 
   if (!song) {
     return <div className="text-center text-muted-foreground">No song selected</div>;
@@ -108,7 +114,7 @@ useEffect(() => {
         </div>
 
         <div>
-          <h3 className="text-xl font-semibold text-foreground mb-4">Albums containing this song</h3>
+          <h3 className="text-2xl font-semibold text-foreground mb-4">Albums containing this song</h3>
           {albums.length > 0 ? (
             <Table>
               <TableHeader>
@@ -152,6 +158,57 @@ useEffect(() => {
             </Table>
           ) : (
             <p className="text-muted-foreground">No albums found for this song</p>
+          )}
+        </div>
+
+        <div>
+          <h3 className="text-2xl font-semibold text-foreground mb-4">All Songs by this Artist</h3>
+          {allSongs.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border">
+                  <TableHead>Title</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Genre</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allSongs.map((songItem) => (
+                  <TableRow key={songItem.id} className="hover:bg-muted/50 border-border transition-colors">
+                    <TableCell className="flex items-center gap-2">
+                      {songItem.coverArt ? (
+                        <img
+                          src={songItem.coverArt}
+                          alt={songItem.title}
+                          className="w-12 h-12 object-cover rounded border border-border shadow"
+                          onError={(e) => (e.currentTarget.src = '/placeholder.png')}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center text-xs text-foreground/50">
+                          No Image
+                        </div>
+                      )}
+                      <span>{songItem.title || "N/A"}</span>
+                    </TableCell>
+                    <TableCell>
+                      {songItem.duration
+                        ? `${Math.floor(songItem.duration / 60)}:${(songItem.duration % 60).toString().padStart(2, '0')}`
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        className="bg-green-500/20 text-green-400 border-green-500/30"
+                      >
+                        {songItem.genre || "N/A"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-muted-foreground">No songs available by this artist</p>
           )}
         </div>
       </CardContent>

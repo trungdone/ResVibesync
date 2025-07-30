@@ -111,6 +111,7 @@ export default function SongForm({ song, onSubmit, onCancel }) {
         coverArt: song.coverArt || "",
         audioUrl: song.audioUrl || "",
         artistImage: "",
+        lyrics_lrc: song.lyrics_lrc || "",
       });
       setPreview({
         coverArt: song.coverArt || null,
@@ -131,22 +132,26 @@ export default function SongForm({ song, onSubmit, onCancel }) {
     }
   }, [artistData, setValue]);
 
-    // AUTO SAVE DRAFT
-  useEffect(() => {
+// AUTO SAVE DRAFT (chỉ khi đang tạo mới bài hát)
+useEffect(() => {
+  if (!song) {
     const subscription = watch((value) => {
       localStorage.setItem(
         "songFormDraft",
         JSON.stringify({
           ...value,
           genre: genres,
+          lyrics_lrc: value.lyrics_lrc || "",
         })
       );
     });
     return () => subscription.unsubscribe();
-  }, [watch, genres]);
+  }
+}, [watch, genres, song]);
 
-  // RESTORE DRAFT
-  useEffect(() => {
+// RESTORE DRAFT (chỉ áp dụng nếu đang tạo mới)
+useEffect(() => {
+  if (!song) { // chỉ khi không có song thì mới load draft
     const draft = localStorage.getItem("songFormDraft");
     if (draft) {
       try {
@@ -162,7 +167,9 @@ export default function SongForm({ song, onSubmit, onCancel }) {
         console.error("Failed to parse song draft", err);
       }
     }
-  }, [reset]);
+  }
+}, [reset, song]);
+
 
   const { getRootProps: getCoverProps, getInputProps: getCoverInputProps } = useDropzone({
     accept: { "image/*": [] },
@@ -418,14 +425,6 @@ export default function SongForm({ song, onSubmit, onCancel }) {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-<label className="block mb-2 text-sm font-medium text-white">Lyrics (.LRC format)</label>
-<textarea
-  {...register("lyrics_lrc")}
-  rows={8}
-  placeholder="[00:10.00]First line\n[00:20.00]Second line"
-  className="w-full p-2 rounded-lg bg-gray-800 text-white border border-gray-600"
-/>
-
                   <div className="flex flex-wrap gap-2">
                     {genres.map((genre, index) => (
                       <Badge
@@ -441,6 +440,13 @@ export default function SongForm({ song, onSubmit, onCancel }) {
                       </Badge>
                     ))}
                   </div>
+               <label className="block mb-2 text-sm font-medium text-white">Lyrics (.LRC format)</label>
+               <textarea
+               {...register("lyrics_lrc")}
+               rows={8}
+               placeholder="[00:10.00]First line\n[00:20.00]Second line"
+               className="w-full p-2 rounded-lg bg-gray-800 text-white border border-gray-600"
+               />
                   {genres.length === 0 && (
                     <p className="text-sm text-red-400 mt-1">At least one genre is required</p>
                   )}
@@ -473,6 +479,19 @@ export default function SongForm({ song, onSubmit, onCancel }) {
                     }}
                     className="mt-1 text-foreground bg-gray-800 border-gray-700 focus:ring-green-500 focus:border-green-500 rounded-md"
                   />
+                  {/* Nút mở folder coverArt */}
+                  <button
+                  type="button"
+                  onClick={() =>
+                  window.open(
+                  "https://console.cloudinary.com/app/c-b0dc706a40de477a78984f32205e70/assets/media_library/folders/home?view_mode=mosaic",
+                  "_blank"
+                   )
+                  }
+                  className="mt-2 inline-flex items-center text-sm text-blue-400 hover:text-blue-300"
+                  >
+                 🖼️ Browse Cloudinary CoverArt Song Folder
+                </button>
                 </div>
                 {(preview.coverArt || coverArtValue) && (
                   <div className="relative mt-1 w-fit">
@@ -519,6 +538,20 @@ export default function SongForm({ song, onSubmit, onCancel }) {
                     }}
                     className="mt-1 text-foreground bg-gray-800 border-gray-700 focus:ring-green-500 focus:border-green-500 rounded-md"
                   />
+                    {/* Nút mở thư mục Cloudinary */}
+                 <button
+                type="button"
+                onClick={() =>
+                window.open(
+                "https://console.cloudinary.com/app/c-b0dc706a40de477a78984f32205e70/assets/media_library/folders/cbc3107c94097f3a078b5e200e80ff1054?view_mode=mosaic",
+                "_blank"
+                )
+                }
+                className="mt-2 inline-flex items-center text-sm text-green-400 hover:text-green-300"
+                 >
+                🎵 Browse Cloudinary Audio Folder
+                 </button>
+
                 </div>
                 {(preview.audio || audioUrlValue) && (
                   <div className="mt-1">
@@ -569,6 +602,19 @@ export default function SongForm({ song, onSubmit, onCancel }) {
                     }}
                     className="mt-1 text-foreground bg-gray-800 border-gray-700 focus:ring-green-500 focus:border-green-500 rounded-md"
                   />
+                  {/* Nút mở folder coverArt artist */}
+                  <button
+                  type="button"
+                  onClick={() =>
+                  window.open(
+                  "https://console.cloudinary.com/app/c-b0dc706a40de477a78984f32205e70/assets/media_library/folders/home?view_mode=mosaic",
+                  "_blank"
+                   )
+                  }
+                  className="mt-2 inline-flex items-center text-sm text-blue-400 hover:text-blue-300"
+                  >
+                 🖼️ Browse Cloudinary CoverArt Artist Folder
+                </button>                  
                 </div>
                 {(preview.artistImage || artistImageValue) && (
                   <div className="relative mt-1 w-fit">

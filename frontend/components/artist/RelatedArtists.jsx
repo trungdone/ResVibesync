@@ -1,11 +1,10 @@
 "use client";
-
 import Link from "next/link";
+import Image from "next/image";
 import { Heart } from "lucide-react";
-import { RelatedArtistCard } from "./RelatedArtistCard";
 
-export default function RelatedArtists({ suggestedArtists = [], navigationLevel = 1 }) {
-  if (navigationLevel !== 1 || suggestedArtists.length === 0) return null;
+export default function RelatedArtists({ suggestedArtists = [] }) {
+  if (!suggestedArtists || suggestedArtists.length === 0) return null;
 
   return (
     <div>
@@ -19,7 +18,23 @@ export default function RelatedArtists({ suggestedArtists = [], navigationLevel 
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {suggestedArtists.map((artist, index) => (
-          <RelatedArtistCard key={artist._id || `suggested-${index}`} artist={artist} />
+          <Link
+            href={`/artist/${artist._id || artist.id || "default"}?from=youmaylike`}
+            key={artist._id || `suggested-${index}`}
+          >
+            <div className="bg-gray-800/50 p-4 rounded-lg text-center hover:bg-gray-700/50 transition-transform duration-300 transform hover:scale-105">
+              <div className="relative w-28 h-28 mx-auto rounded-full overflow-hidden shadow-md">
+                <Image
+                  src={artist.image || "/placeholder.svg"}
+                  alt={artist.name || "Artist image"}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <h4 className="text-base font-semibold mt-3 text-white">{artist.name || "Unknown Artist"}</h4>
+              <p className="text-xs text-gray-400">{artist.genres?.join(", ") || "No genres"}</p>
+            </div>
+          </Link>
         ))}
       </div>
     </div>

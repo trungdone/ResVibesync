@@ -41,20 +41,26 @@ class ArtistAlbumService:
         data = album_data.dict(exclude_unset=True)
         data["artist_id"] = artist_id
         data["created_at"] = datetime.utcnow()
+        # Chuyển cover_art thành chuỗi nếu là HttpUrl
+        if "cover_art" in data and data["cover_art"]:
+            data["cover_art"] = str(data["cover_art"])
         album_id = self.repo.insert(data)
         return str(album_id)
 
     def update_album(self, album_id: str, album_data: AlbumUpdate, artist_id: str) -> bool:
         album = self.repo.find_by_id(album_id)
-        if not album or str(album["artistId"]) != artist_id:
+        if not album or str(album["artist_id"]) != artist_id:
             return False
         update_data = album_data.dict(exclude_unset=True)
+        # Chuyển cover_art thành chuỗi nếu là HttpUrl
+        if "cover_art" in update_data and update_data["cover_art"]:
+            update_data["cover_art"] = str(update_data["cover_art"])
         update_data["updated_at"] = datetime.utcnow()
         return self.repo.update(album_id, update_data)
 
     def delete_album(self, album_id: str, artist_id: str) -> bool:
         album = self.repo.find_by_id(album_id)
-        if not album or str(album["artistId"]) != artist_id:
+        if not album or str(album["artist_id"]) != artist_id:
             return False
         return self.repo.delete(album_id)
     

@@ -173,7 +173,7 @@ export default function EditArtistProfile() {
         onChange={handleImageChange}
       />
     </div>
-  </div>
+    </div>
 
         {/* RIGHT: Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -212,7 +212,7 @@ export default function EditArtistProfile() {
               onChange={(e) =>
                 setFormData({ ...formData, bio: e.target.value })
               }
-              className="bg-white/10 text-white border border-white/20"
+              className="w-full p-3 rounded-md bg-[#412a66] text-gray-100 resize-none border border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 scroll-container"
             />
           </div>
 
