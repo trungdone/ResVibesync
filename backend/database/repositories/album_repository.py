@@ -5,8 +5,9 @@ from typing import List, Optional, Dict
 from datetime import datetime
 
 class AlbumRepository:
-    def __init__(self):
-        self.collection = albums_collection
+    def __init__(self, collection=albums_collection):  # ✅ dùng default param
+        self.collection = collection
+
 
     @staticmethod
     def _validate_object_id(album_id: str) -> ObjectId:
@@ -104,3 +105,27 @@ class AlbumRepository:
             return result.modified_count > 0
         except Exception as e:
             raise ValueError(f"Failed to remove song from album: {str(e)}")
+
+    
+    @staticmethod
+    def get_all_album_simple() -> List[Dict]:
+        """
+        Lấy tất cả album và chỉ lấy các trường cần thiết.
+        """
+        try:
+            albums = albums_collection.find({}, {
+                "_id": 1,
+                "title": 1,
+                "artist_id": 1,
+                "release_year": 1,
+                "genres": 1,
+                "songs": 1,
+                "cover_image": 1,
+                "release_date": 1,
+                "created_at": 1,
+                "updated_at": 1
+            })
+            return list(albums)
+        except Exception as e:
+            raise ValueError(f"Failed to get all albums: {str(e)}")
+

@@ -8,12 +8,37 @@ from database.repositories.artist_repository import ArtistRepository
 from urllib.request import urlopen
 from urllib.error import HTTPError
 from fastapi import HTTPException
-
+from database.db import albums_collection
+from database.repositories.album_repository import AlbumRepository
+from utils.text_utils import normalize_text
 
 class SongService:
     def __init__(self, song_repository: SongRepository, artist_repository: ArtistRepository):
         self.song_repository = song_repository
         self.artist_repository = artist_repository
+        self.album_repo = AlbumRepository(albums_collection) 
+
+
+    
+
+    def find_song_by_fuzzy_title(self, query: str):
+        songs = self.song_repository.get_all_songs_simple()
+        query_norm = normalize_text(query)
+
+        titles = [normalize_text(song["title"]) for song in songs]
+        matches = difflib.get_close_matches(query_norm, titles, n=1, cutoff=0.6)
+
+        if matches:
+            matched_title = matches[0]
+            for song in songs:
+                if normalize_text(song["title"]) == matched_title:
+                    return song
+
+        return None
+
+    
+
+    
 
     @staticmethod
     def _map_to_song_in_db(song: dict) -> SongInDB:
@@ -98,7 +123,7 @@ class SongService:
                     "song_id": str(song.get("_id", "")),
                     "artist": song.get("artist", ""),
                     "artistId": str(song.get("artistId", "")),
-                    "releaseYear": song.get("releaseYear", "")
+                    "releaseYear": song.get("releaseYear", ""),
                 }
                 for song in raw_songs
             ]
@@ -117,6 +142,9 @@ class SongService:
         return self.song_repository.delete(song_id)
     
     def get_songs_by_genre(self, genre: str, page: int = 1, limit: int = 500) -> List[SongInDB]:
+
+
+
       if not genre:
         raise ValueError("Genre is required")
       songs = self.song_repository.find_by_genre(genre, page, limit)

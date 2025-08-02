@@ -7,6 +7,7 @@ from difflib import get_close_matches
 class ArtistRepository:
     def __init__(self):
         self.collection = artists_collection
+    
 
     def find_by_id(self, artist_id: ObjectId) -> Optional[dict]:
         return self.collection.find_one({"_id": artist_id})
@@ -42,3 +43,8 @@ class ArtistRepository:
         matches = get_close_matches(query, artist_names, n=limit, cutoff=0.6)
         matched_artists = [a for a in all_artists if a["name"] in matches]
         return matched_artists
+    
+    def get_all_names(self):
+     # Trả về danh sách tất cả tên nghệ sĩ (chuẩn hóa)
+     return [artist["name"].lower() for artist in self.collection.find({}, {"name": 1})]
+

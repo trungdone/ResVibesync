@@ -8,6 +8,7 @@ import Header from "@/components/layout/header";
 import { MusicProvider } from "@/context/music-context";
 import { useAuth } from "@/context/auth-context";
 import { NotificationProvider } from "@/context/notification-context";
+import ChatBoxLauncher from "@/components/chatbot/ChatBoxLauncher";
 
 export default function ClientLayout({ children }) {
   const { user, isAuthenticated, loading } = useAuth();
@@ -74,6 +75,7 @@ export default function ClientLayout({ children }) {
             <main className="flex-1 overflow-y-auto p-4">{children}</main>
           </div>
           <Player />
+          <ChatBoxLauncher />
         </div>
       </MusicProvider>
     </NotificationProvider>

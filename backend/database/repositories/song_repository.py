@@ -5,6 +5,7 @@ from bson.regex import Regex
 from typing import List, Optional, Dict
 from datetime import datetime
 import logging
+from database.db import db 
 
 # 🔧 Cấu hình logger
 logger = logging.getLogger(__name__)
@@ -16,6 +17,13 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 class SongRepository:
+    def __init__(self):
+        self.collection = db["songs"]
+        
+    
+    def find_by_title(self, title: str):
+     return self.collection.find_one({"title": {"$regex": f"^{title}$", "$options": "i"}})
+
     @staticmethod
     def _validate_object_id(song_id: str) -> ObjectId:
         try:
@@ -220,6 +228,12 @@ class SongRepository:
         except Exception as e:
            print(f"Error in find_by_genre: {str(e)}")
            raise ValueError(f"Failed to query songs by genre: {str(e)}")
+
+
+    # Trả về danh sách tất cả tên bài hát (chuẩn hóa)    
+    def get_all_titles(self):
+     return [song["title"].lower() for song in self.collection.find({}, {"title": 1})]
+
 
     
     
